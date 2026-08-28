@@ -2,13 +2,14 @@ import { NavLink, useParams } from "react-router";
 import { clsx } from "clsx";
 import {
   LayoutDashboard, BookOpen, Users, Film, CalendarClock, Download,
-  FolderKanban, PlusCircle, Pencil,
+  FolderKanban, PlusCircle, Pencil, Globe2,
 } from "lucide-react";
 
 const PROJECT_TABS = [
   { to: "dashboard", label: "대시보드", icon: LayoutDashboard },
   { to: "story", label: "스토리", icon: BookOpen },
   { to: "characters", label: "캐릭터", icon: Users },
+  { to: "world", label: "세계관", icon: Globe2 },
   { to: "scenes", label: "장면 설계", icon: Film },
   { to: "schedule", label: "일정 리스크", icon: CalendarClock },
   { to: "export", label: "내보내기", icon: Download },

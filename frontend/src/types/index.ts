@@ -3,6 +3,7 @@ export type Cadence = "주 1회" | "주 2회" | "격주" | "월 1회";
 export type ColorMode = "흑백" | "컬러" | "한정컬러";
 export type BgComplexity = "단순" | "보통" | "복잡";
 export type ForeshadowStatus = "미회수" | "회수완료" | "진행중";
+export type ForeshadowImportance = "low" | "medium" | "high";
 export type EpisodePurpose = "설정" | "전개" | "클라이맥스" | "반전" | "여운";
 export type RiskLevel = "낮음" | "보통" | "높음" | "위험";
 
@@ -43,6 +44,9 @@ export interface Foreshadow {
   appearEp: number;
   resolveEp: number | null;
   status: ForeshadowStatus;
+  keyword?: string;
+  importance?: ForeshadowImportance;
+  relatedCharacterIds?: string[];
 }
 
 export interface Character {
@@ -56,6 +60,28 @@ export interface Character {
   taboo: string;
   secret: string;
   keywords: string[];
+  imageUrl?: string;
+  gender?: string;
+  age?: string;
+  origin?: string;
+  occupation?: string;
+  likes?: string;
+  dislikes?: string;
+  backstory?: string;
+  relationships?: string;
+}
+
+export interface WorldSetting {
+  id: string;
+  projectId: string;
+  era: string;
+  mainPlaces: string;
+  worldRules: string;
+  organizations: string;
+  culture: string;
+  technologyOrMagic: string;
+  moodTone: string;
+  forbiddenSettings: string;
 }
 
 export interface SceneRequest {

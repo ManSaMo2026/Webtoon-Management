@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Sparkles, Filter } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Filter, Network } from "lucide-react";
 import { storyApi } from "../../api/story";
+import { charactersApi } from "../../api/characters";
+import { aiApi } from "../../api/ai.api";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Modal, ConfirmModal } from "../../components/ui/Modal";
 import { Input, Textarea, Select } from "../../components/ui/FormField";
 import { SkeletonList, EmptyState } from "../../components/ui/Skeleton";
-import type { Episode, Foreshadow, Act, EpisodePurpose, ForeshadowStatus } from "../../types";
+import type { Character, Episode, Foreshadow, Act, EpisodePurpose, ForeshadowImportance, ForeshadowStatus } from "../../types";
 
 const PURPOSE_OPTIONS: EpisodePurpose[] = ["설정", "전개", "클라이맥스", "반전", "여운"];
 const purposeColor: Record<EpisodePurpose, "info" | "default" | "danger" | "warning" | "neutral"> = {
@@ -195,13 +197,34 @@ function EpisodesSection({ projectId }: { projectId: string }) {
 }
 
 // --- Foreshadow Section ---
-const EMPTY_F = { content: "", appearEp: 1, resolveEp: null as number | null, status: "미회수" as ForeshadowStatus };
+const EMPTY_F = {
+  content: "",
+  keyword: "",
+  importance: "medium" as ForeshadowImportance,
+  relatedCharacterIds: [] as string[],
+  appearEp: 1,
+  resolveEp: null as number | null,
+  status: "미회수" as ForeshadowStatus,
+};
+
+const importanceLabel: Record<ForeshadowImportance, string> = { low: "낮음", medium: "보통", high: "높음" };
+const importanceBadge: Record<ForeshadowImportance, "neutral" | "info" | "danger"> = { low: "neutral", medium: "info", high: "danger" };
 
 function ForeshadowModal({ open, onClose, projectId, item }: {
   open: boolean; onClose: () => void; projectId: string; item?: Foreshadow;
 }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState(item ?? { ...EMPTY_F, projectId });
+  const [form, setForm] = useState(item ? { ...item, relatedCharacterIds: item.relatedCharacterIds ?? [] } : { ...EMPTY_F, projectId });
+  const { data: characters } = useQuery({
+    queryKey: ["characters", projectId],
+    queryFn: () => charactersApi.list(projectId),
+  });
+
+  // 수정 대상을 바꾸거나 새 항목을 열 때 이전 모달의 입력값이 남지 않도록 합니다.
+  useEffect(() => {
+    if (!open) return;
+    setForm(item ? { ...item, relatedCharacterIds: item.relatedCharacterIds ?? [] } : { ...EMPTY_F, projectId });
+  }, [open, item, projectId]);
 
   const mutation = useMutation({
     mutationFn: () => item
@@ -224,6 +247,15 @@ function ForeshadowModal({ open, onClose, projectId, item }: {
       }
     >
       <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input label="핵심 키워드" value={form.keyword ?? ""}
+            onChange={(e) => setForm(f => ({ ...f, keyword: e.target.value }))}
+            placeholder="예: 황제의 반지, 붉은 달" />
+          <Select label="중요도" value={form.importance ?? "medium"}
+            onChange={(e) => setForm(f => ({ ...f, importance: e.target.value as ForeshadowImportance }))}>
+            {(Object.keys(importanceLabel) as ForeshadowImportance[]).map(level => <option key={level} value={level}>{importanceLabel[level]}</option>)}
+          </Select>
+        </div>
         <Textarea label="복선 내용" rows={2} value={form.content}
           onChange={(e) => setForm(f => ({ ...f, content: e.target.value }))}
           placeholder="복선의 내용이나 장면을 설명하세요." />
@@ -238,6 +270,25 @@ function ForeshadowModal({ open, onClose, projectId, item }: {
           onChange={(e) => setForm(f => ({ ...f, status: e.target.value as ForeshadowStatus }))}>
           {(["미회수", "진행중", "회수완료"] as ForeshadowStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
         </Select>
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">관련 캐릭터</p>
+          {!characters?.length ? <p className="text-xs text-muted-foreground">먼저 캐릭터를 등록하면 복선과 연결할 수 있습니다.</p> :
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {characters.map(character => {
+                const checked = (form.relatedCharacterIds ?? []).includes(character.id);
+                return <label key={character.id} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm cursor-pointer hover:bg-muted/30">
+                  <input type="checkbox" checked={checked} className="accent-primary"
+                    onChange={() => setForm(current => ({
+                      ...current,
+                      relatedCharacterIds: checked
+                        ? (current.relatedCharacterIds ?? []).filter(id => id !== character.id)
+                        : [...(current.relatedCharacterIds ?? []), character.id],
+                    }))} />
+                  {character.name}<span className="text-xs text-muted-foreground">{character.role}</span>
+                </label>;
+              })}
+            </div>}
+        </div>
       </div>
     </Modal>
   );
@@ -249,10 +300,16 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
   const [editItem, setEditItem] = useState<Foreshadow | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterUnresolved, setFilterUnresolved] = useState(false);
+  const [filterHigh, setFilterHigh] = useState(false);
+  const [review, setReview] = useState("");
 
   const { data: foreshadows, isLoading } = useQuery({
     queryKey: ["foreshadows", projectId],
     queryFn: () => storyApi.getForeshadows(projectId),
+  });
+  const { data: characters } = useQuery({
+    queryKey: ["characters", projectId],
+    queryFn: () => charactersApi.list(projectId),
   });
 
   const deleteMutation = useMutation({
@@ -260,18 +317,42 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["foreshadows", projectId] }); toast.success("복선이 삭제되었습니다."); setDeleteId(null); },
   });
 
-  const list = filterUnresolved ? foreshadows?.filter(f => f.status === "미회수") : foreshadows;
+  const reviewMutation = useMutation({
+    mutationFn: () => aiApi.reviewForeshadows(foreshadows ?? []),
+    onSuccess: setReview,
+    onError: () => toast.error("복선 점검 결과를 불러오지 못했습니다."),
+  });
+
+  const list = (foreshadows ?? []).filter(item =>
+    (!filterUnresolved || item.status !== "회수완료") && (!filterHigh || item.importance === "high")
+  );
+  const characterNames = new Map((characters ?? []).map(character => [character.id, character.name]));
+  const summary = {
+    all: foreshadows?.length ?? 0,
+    unresolved: foreshadows?.filter(item => item.status !== "회수완료").length ?? 0,
+    high: foreshadows?.filter(item => item.importance === "high").length ?? 0,
+    completed: foreshadows?.filter(item => item.status === "회수완료").length ?? 0,
+  };
 
   return (
-    <Card>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {[["전체 복선", summary.all], ["미회수 복선", summary.unresolved], ["중요도 높음", summary.high], ["회수 완료", summary.completed]].map(([label, value]) =>
+          <Card key={label} padding="sm"><p className="text-xs text-muted-foreground">{label}</p><p className="text-2xl font-bold font-mono mt-1">{value}</p></Card>)}
+      </div>
+      <Card>
       <CardHeader>
         <CardTitle>복선 관리</CardTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
           <button
             onClick={() => setFilterUnresolved(f => !f)}
             className={`text-xs px-2.5 py-1 rounded-md border transition-colors flex items-center gap-1 ${filterUnresolved ? "border-primary bg-secondary text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
           >
-            <Filter size={11} />미회수만
+            <Filter size={11} />미회수만 보기
+          </button>
+          <button onClick={() => setFilterHigh(value => !value)}
+            className={`text-xs px-2.5 py-1 rounded-md border transition-colors flex items-center gap-1 ${filterHigh ? "border-primary bg-secondary text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+            <Filter size={11} />중요도 높음만 보기
           </button>
           <Button size="sm" onClick={() => { setEditItem(undefined); setModalOpen(true); }}>
             <Plus size={14} />복선 추가
@@ -280,27 +361,36 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
       </CardHeader>
       {isLoading ? <SkeletonList count={2} /> : (
         <>
-          {!list?.length ? (
-            <EmptyState title={filterUnresolved ? "미회수 복선이 없습니다" : "등록된 복선이 없습니다"} />
+          {!list.length ? (
+            <EmptyState title={filterUnresolved || filterHigh ? "조건에 맞는 복선이 없습니다" : "등록된 복선이 없습니다"} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground">
-                    <th className="text-left pb-2 font-medium">복선 내용</th>
+                    <th className="text-left pb-2 font-medium">키워드 / 복선 내용</th>
+                    <th className="text-center pb-2 font-medium w-20">중요도</th>
                     <th className="text-center pb-2 font-medium w-16">등장화</th>
                     <th className="text-center pb-2 font-medium w-16">회수화</th>
                     <th className="text-center pb-2 font-medium w-20">상태</th>
+                    <th className="text-left pb-2 font-medium min-w-32">관련 캐릭터</th>
                     <th className="w-16 pb-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {list.sort((a, b) => a.appearEp - b.appearEp).map(f => (
+                  {[...list].sort((a, b) => a.appearEp - b.appearEp).map(f => (
                     <tr key={f.id} className="border-b border-border/50 group hover:bg-muted/30 transition-colors">
-                      <td className="py-2.5 pr-4 text-foreground">{f.content}</td>
+                      <td className="py-2.5 pr-4 text-foreground">
+                        {f.keyword && <Badge variant="default" className="mb-1">{f.keyword}</Badge>}
+                        <p className="text-sm">{f.content}</p>
+                      </td>
+                      <td className="py-2.5 text-center"><Badge variant={importanceBadge[f.importance ?? "medium"]}>{importanceLabel[f.importance ?? "medium"]}</Badge></td>
                       <td className="py-2.5 text-center font-mono text-muted-foreground">{f.appearEp}화</td>
                       <td className="py-2.5 text-center font-mono text-muted-foreground">{f.resolveEp ? `${f.resolveEp}화` : "—"}</td>
                       <td className="py-2.5 text-center"><Badge variant={foreshadowBadge[f.status]}>{f.status}</Badge></td>
+                      <td className="py-2.5 text-xs text-muted-foreground">
+                        {(f.relatedCharacterIds ?? []).map(id => characterNames.get(id)).filter(Boolean).join(", ") || "—"}
+                      </td>
                       <td className="py-2.5">
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                           <button onClick={() => { setEditItem(f); setModalOpen(true); }} className="p-1 text-muted-foreground hover:text-primary"><Pencil size={12} /></button>
@@ -320,7 +410,20 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         title="복선 삭제" message="이 복선을 삭제하시겠습니까?"
         loading={deleteMutation.isPending} />
-    </Card>
+      </Card>
+
+      <Card className="border-dashed">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-secondary text-primary flex items-center justify-center shrink-0"><Network size={19} /></div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">복선 구조 보기 준비 영역</p>
+            <p className="text-xs text-muted-foreground mt-1">추후 복선, 캐릭터, 회차 간 관계를 마인드맵 형태로 확장할 수 있습니다.</p>
+            {review && <p className="text-xs text-foreground mt-2 rounded-md bg-muted/50 p-2">{review}</p>}
+          </div>
+          <Button size="sm" variant="outline" loading={reviewMutation.isPending} onClick={() => reviewMutation.mutate()}><Sparkles size={13} />AI로 복선 점검</Button>
+        </div>
+      </Card>
+    </div>
   );
 }
 

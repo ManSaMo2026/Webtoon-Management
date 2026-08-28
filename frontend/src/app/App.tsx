@@ -10,6 +10,7 @@ import { CharactersTab } from "../pages/tabs/CharactersTab";
 import { ScenesTab } from "../pages/tabs/ScenesTab";
 import { ScheduleTab } from "../pages/tabs/ScheduleTab";
 import { ExportTab } from "../pages/tabs/ExportTab";
+import { WorldSettingTab } from "../pages/tabs/WorldSettingTab";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="dashboard" element={<DashboardTab />} />
             <Route path="story" element={<StoryTab />} />
             <Route path="characters" element={<CharactersTab />} />
+            <Route path="world" element={<WorldSettingTab />} />
             <Route path="scenes" element={<ScenesTab />} />
             <Route path="schedule" element={<ScheduleTab />} />
             <Route path="export" element={<ExportTab />} />

@@ -1,5 +1,5 @@
 import type {
-  Project, Episode, Foreshadow, Character, Act, Todo,
+  Project, Episode, Foreshadow, Character, Act, Todo, WorldSetting,
 } from "../types";
 
 const KEYS = {
@@ -9,6 +9,7 @@ const KEYS = {
   characters: "wt_characters",
   acts: "wt_acts",
   todos: "wt_todos",
+  worldSettings: "wt_world_settings",
 };
 
 function load<T>(key: string): T[] {
@@ -73,9 +74,9 @@ const SEED_EPISODES: Episode[] = [
 ];
 
 const SEED_FORESHADOWS: Foreshadow[] = [
-  { id: "f1", projectId: "p1", content: "황제의 반지에 새겨진 룬 문자", appearEp: 1, resolveEp: null, status: "미회수" },
-  { id: "f2", projectId: "p1", content: "스승의 마지막 말 '네 어머니를 찾아라'", appearEp: 2, resolveEp: 15, status: "회수완료" },
-  { id: "f3", projectId: "p1", content: "붉은 달이 뜨는 날의 예언", appearEp: 1, resolveEp: null, status: "미회수" },
+  { id: "f1", projectId: "p1", content: "황제의 반지에 새겨진 룬 문자", keyword: "황제의 반지", importance: "high", relatedCharacterIds: ["c1"], appearEp: 1, resolveEp: null, status: "미회수" },
+  { id: "f2", projectId: "p1", content: "스승의 마지막 말 '네 어머니를 찾아라'", keyword: "어머니의 행방", importance: "medium", relatedCharacterIds: ["c1"], appearEp: 2, resolveEp: 15, status: "회수완료" },
+  { id: "f3", projectId: "p1", content: "붉은 달이 뜨는 날의 예언", keyword: "붉은 달", importance: "high", relatedCharacterIds: ["c1", "c2"], appearEp: 1, resolveEp: null, status: "미회수" },
 ];
 
 const SEED_CHARACTERS: Character[] = [
@@ -238,6 +239,23 @@ export const actStore = {
     if (existing >= 0) acts[existing] = data;
     else acts.push(data);
     save(KEYS.acts, acts);
+    return data;
+  },
+};
+
+// World setting uses one document per project so it can later map to a REST upsert endpoint.
+export const worldSettingStore = {
+  getByProject: async (projectId: string): Promise<WorldSetting | null> => {
+    await delay(200);
+    return load<WorldSetting>(KEYS.worldSettings).find((item) => item.projectId === projectId) ?? null;
+  },
+  upsert: async (data: WorldSetting): Promise<WorldSetting> => {
+    await delay(400);
+    const settings = load<WorldSetting>(KEYS.worldSettings);
+    const existing = settings.findIndex((item) => item.projectId === data.projectId);
+    if (existing >= 0) settings[existing] = data;
+    else settings.push(data);
+    save(KEYS.worldSettings, settings);
     return data;
   },
 };

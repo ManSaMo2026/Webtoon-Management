@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Film, Plus, X, Sparkles } from "lucide-react";
 import { scenesApi } from "../../api/scenes";
 import { storyApi } from "../../api/story";
+import { charactersApi } from "../../api/characters";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input, Select, Textarea } from "../../components/ui/FormField";
@@ -37,7 +38,7 @@ export function ScenesTab() {
 
   const { data: characters } = useQuery({
     queryKey: ["characters", projectId],
-    queryFn: () => import("../../api/characters").then(m => m.charactersApi.list(projectId!)),
+    queryFn: () => charactersApi.list(projectId!),
     enabled: !!projectId,
   });
 
