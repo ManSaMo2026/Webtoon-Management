@@ -10,6 +10,12 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("wt_auth_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {

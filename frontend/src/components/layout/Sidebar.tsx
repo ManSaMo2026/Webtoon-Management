@@ -1,9 +1,10 @@
-import { NavLink, useParams } from "react-router";
+import { Link, NavLink, useNavigate, useParams } from "react-router";
 import { clsx } from "clsx";
 import {
   LayoutDashboard, BookOpen, Users, Film, CalendarClock, Download,
-  FolderKanban, PlusCircle, Pencil, Globe2,
+  FolderKanban, PlusCircle, Pencil, Globe2, LogOut, Settings,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const PROJECT_TABS = [
   { to: "dashboard", label: "대시보드", icon: LayoutDashboard },
@@ -52,6 +53,16 @@ interface SidebarProps {
 }
 
 export function Sidebar({ projectMode, projectTitle }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const displayName = user?.penName || user?.name || "작가";
+  const initial = displayName.slice(0, 1);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-56 bg-sidebar flex flex-col z-30 border-r border-sidebar-border">
       <div className="px-4 py-5 border-b border-sidebar-border">
@@ -59,7 +70,7 @@ export function Sidebar({ projectMode, projectTitle }: SidebarProps) {
           <div className="w-7 h-7 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <Pencil size={14} className="text-white" />
           </div>
-          <span className="text-white font-bold text-sm tracking-tight">웹툰메이커</span>
+          <Link to="/" className="text-white font-bold text-sm tracking-tight">웹툰메이커</Link>
         </div>
       </div>
 
@@ -91,13 +102,14 @@ export function Sidebar({ projectMode, projectTitle }: SidebarProps) {
         )}
       </nav>
 
-      <div className="px-4 py-3 border-t border-sidebar-border">
+      <div className="px-3 py-3 border-t border-sidebar-border">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-400 flex items-center justify-center text-white text-xs font-bold">김</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-accent-foreground truncate">김웹툰</p>
-            <p className="text-xs text-sidebar-foreground/50 truncate">작가</p>
-          </div>
+          <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 hover:bg-sidebar-accent/50">
+            <div className="w-7 h-7 shrink-0 rounded-full bg-indigo-400 flex items-center justify-center text-white text-xs font-bold">{initial}</div>
+            <div className="flex-1 min-w-0"><p className="text-xs font-medium text-sidebar-accent-foreground truncate">{displayName}</p><p className="text-xs text-sidebar-foreground/50 truncate">{user?.role || "작가"}</p></div>
+            <Settings size={14} className="text-sidebar-foreground/50" />
+          </Link>
+          <button onClick={handleLogout} title="로그아웃" className="rounded-md p-2 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-white"><LogOut size={15} /></button>
         </div>
       </div>
     </aside>

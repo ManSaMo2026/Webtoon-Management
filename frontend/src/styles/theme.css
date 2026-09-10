@@ -9,6 +9,7 @@
   --popover: #ffffff;
   --popover-foreground: #0d1117;
   --primary: #4f46e5;
+  --primary-hover: #4338ca;
   --primary-foreground: #ffffff;
   --secondary: #ede9fe;
   --secondary-foreground: #3730a3;
@@ -16,6 +17,10 @@
   --muted-foreground: #64748b;
   --accent: #ede9fe;
   --accent-foreground: #4338ca;
+  --text: #18181b;
+  --text-body: #3f3f46;
+  --text-muted: #71717a;
+  --page-bg: #fffdfa;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
@@ -88,6 +93,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -95,6 +101,10 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-text: var(--text);
+  --color-text-body: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-bg: var(--page-bg);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -129,6 +139,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   ::-webkit-scrollbar {
@@ -146,6 +158,8 @@
 
   html {
     font-size: var(--font-size);
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   h1 {
