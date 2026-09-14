@@ -19,3 +19,4 @@ Thumbs.db
 # 에디터 설정
 .vscode/
 .idea/
+backend/data/
