@@ -1,8 +1,9 @@
-import { useOutletContext, useParams } from "react-router";
+import { Link, useOutletContext, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, AlertTriangle, CheckSquare, Square, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Clock, CheckSquare, Square, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { todosApi } from "../../api/todos";
+import { scheduleApi } from "../../api/schedule";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Gauge, ProgressBar } from "../../components/ui/Gauge";
@@ -20,6 +21,17 @@ export function DashboardTab() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const dday = getDday(project.nextDeadline);
+  const scheduleResult = scheduleApi.calculateSync({
+    cuts: project.avgCuts,
+    weeklyHours: project.weeklyHours,
+    colorMode: project.colorMode,
+    bgComplexity: project.bgComplexity,
+    hasAssistant: project.hasAssistant,
+    deadlineDays: Math.max(1, dday),
+  });
+  const nextAction = project.logline.trim()
+    ? { to: `/projects/${id}/schedule`, title: "첫 일정 진단을 확인해보세요", description: "입력한 작업량과 마감일을 바탕으로 부족한 시간을 확인할 수 있습니다.", label: "일정 진단 보기" }
+    : { to: `/projects/${id}/story`, title: "먼저 작품의 한 줄 소개를 적어보세요", description: "작품의 중심을 정하면 캐릭터와 장면을 설계하기 쉬워집니다.", label: "스토리 시작하기" };
   const [newTodo, setNewTodo] = useState("");
 
   const { data: todos, isLoading } = useQuery({
@@ -45,6 +57,20 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-5">
+      <Card className="border-primary/20 bg-accent/40">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm"><Sparkles size={18} /></span>
+            <div>
+              <p className="text-xs font-semibold text-primary">지금 할 일</p>
+              <h2 className="mt-1 text-base font-bold text-text">{nextAction.title}</h2>
+              <p className="mt-1 text-sm leading-6 text-text-body">{nextAction.description}</p>
+            </div>
+          </div>
+          <Link to={nextAction.to} className="shrink-0"><Button size="sm">{nextAction.label}<ArrowRight size={14} /></Button></Link>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* D-day */}
         <Card className="flex flex-col items-center justify-center text-center py-6">
@@ -59,7 +85,8 @@ export function DashboardTab() {
 
         {/* Success rate */}
         <Card className="flex flex-col items-center justify-center py-4">
-          <Gauge value={project.successRate} size="md" colorize label="마감 성공 확률" />
+          <Gauge value={scheduleResult.successRate} size="md" colorize label="마감 가능성 참고값" />
+          <p className="mt-1 text-center text-[11px] text-muted-foreground">현재 입력값을 이용한 수식 기반 추정</p>
         </Card>
 
         {/* Progress */}
@@ -73,17 +100,12 @@ export function DashboardTab() {
 
         {/* Risk */}
         <Card className="flex flex-col justify-center gap-3">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">위험 요약</div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">미회수 복선</span>
-              <Badge variant="warning">미확인</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">설정 충돌 경고</span>
-              <Badge variant="danger">2건</Badge>
-            </div>
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">가장 큰 일정 요인</div>
+          <div>
+            <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{scheduleResult.riskFactors[0]?.label}</span><Badge variant={scheduleResult.riskFactors[0]?.severity === "high" ? "danger" : scheduleResult.riskFactors[0]?.severity === "medium" ? "warning" : "success"}>{scheduleResult.riskFactors[0]?.severity === "high" ? "높음" : scheduleResult.riskFactors[0]?.severity === "medium" ? "보통" : "낮음"}</Badge></div>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{scheduleResult.riskFactors[0]?.detail}</p>
           </div>
+          <Link to={`/projects/${id}/schedule`} className="text-xs font-semibold text-primary hover:underline">계산 근거 확인하기 →</Link>
         </Card>
       </div>
 

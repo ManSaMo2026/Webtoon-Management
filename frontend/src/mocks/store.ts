@@ -131,6 +131,19 @@ initSeed();
 
 const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));
 
+function estimateInitialSchedule(data: Pick<Project, "avgCuts" | "weeklyHours" | "colorMode" | "bgComplexity" | "hasAssistant" | "nextDeadline">) {
+  const colorFactor = data.colorMode === "컬러" ? 1.3 : 1;
+  const backgroundFactor = data.bgComplexity === "복잡" ? 1.25 : data.bgComplexity === "보통" ? 1.1 : 1;
+  const assistantFactor = data.hasAssistant ? 0.8 : 1;
+  const requiredHours = data.avgCuts * 1.5 * colorFactor * backgroundFactor * assistantFactor;
+  const daysLeft = Math.max(1, Math.ceil((new Date(data.nextDeadline).getTime() - Date.now()) / 86400000));
+  const availableHours = data.weeklyHours * (daysLeft / 7);
+  const successRate = Math.max(5, Math.min(95, Math.round((availableHours / requiredHours) * 72)));
+  const riskLevel: Project["riskLevel"] = successRate >= 75 ? "낮음" : successRate >= 55 ? "보통" : successRate >= 35 ? "높음" : "위험";
+
+  return { successRate, riskLevel };
+}
+
 // Projects
 export const projectStore = {
   getAll: async (): Promise<Project[]> => { await delay(); return load<Project>(KEYS.projects); },
@@ -138,12 +151,12 @@ export const projectStore = {
   create: async (data: Omit<Project, "id" | "createdAt" | "updatedAt" | "currentEpisode" | "successRate" | "riskLevel">): Promise<Project> => {
     await delay(600);
     const projects = load<Project>(KEYS.projects);
+    const scheduleEstimate = estimateInitialSchedule(data);
     const newProject: Project = {
       ...data,
       id: `p${Date.now()}`,
       currentEpisode: 0,
-      successRate: Math.floor(50 + Math.random() * 40),
-      riskLevel: "보통",
+      ...scheduleEstimate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

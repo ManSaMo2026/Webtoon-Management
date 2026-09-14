@@ -10,6 +10,7 @@ export type RiskLevel = "낮음" | "보통" | "높음" | "위험";
 export interface Project {
   id: string;
   title: string;
+  coverImageUrl?: string;
   genre: Genre;
   totalEpisodes: number;
   cadence: Cadence;

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { PlusCircle, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { PlusCircle, AlertTriangle, Clock, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { projectsApi } from "../api/projects";
 import { MainLayout } from "../components/layout/MainLayout";
@@ -12,6 +12,7 @@ import { SkeletonList, ErrorState, EmptyState } from "../components/ui/Skeleton"
 import { ConfirmModal } from "../components/ui/Modal";
 import type { Project, RiskLevel } from "../types";
 import { useState } from "react";
+import { optimizeCoverImage } from "../utils/image";
 
 function getDday(dateStr: string) {
   const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
@@ -25,59 +26,72 @@ function riskBadge(risk: RiskLevel) {
   return <Badge variant={map[risk]}>{risk}</Badge>;
 }
 
-function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: string) => void }) {
+const COVER_STYLES: Record<string, string> = {
+  판타지: "from-indigo-950 via-violet-800 to-amber-500",
+  로맨스: "from-rose-700 via-pink-500 to-orange-200",
+  액션: "from-zinc-950 via-red-800 to-orange-500",
+  스릴러: "from-slate-950 via-slate-700 to-emerald-700",
+  일상: "from-sky-700 via-cyan-500 to-yellow-200",
+  SF: "from-slate-950 via-indigo-800 to-cyan-400",
+  공포: "from-neutral-950 via-red-950 to-stone-600",
+  스포츠: "from-blue-900 via-blue-600 to-lime-400",
+  기타: "from-violet-900 via-indigo-600 to-sky-300",
+};
+
+function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Project; number: number; onDelete: (id: string) => void; onCoverChange: (id: string, file?: File) => void }) {
   const navigate = useNavigate();
   const dday = getDday(project.nextDeadline);
 
   return (
-    <Card
-      className="hover:shadow-md transition-shadow cursor-pointer group"
+    <Card padding="none"
+      className="group flex min-h-[260px] cursor-pointer overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md"
       onClick={() => navigate(`/projects/${project.id}/dashboard`)}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-sm font-semibold text-foreground truncate">{project.title}</h2>
-            <Badge variant="info">{project.genre}</Badge>
-            {riskBadge(project.riskLevel)}
+      <div className={`relative w-[34%] min-w-[116px] shrink-0 overflow-hidden bg-gradient-to-br ${COVER_STYLES[project.genre]}`}>
+        {project.coverImageUrl ? (
+          <img src={project.coverImageUrl} alt={`${project.title} 표지`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+        ) : (
+          <div className="flex h-full flex-col justify-between p-4 text-white">
+            <span className="text-[10px] font-semibold tracking-[0.18em] text-white/65">WEBTOON</span>
+            <div>
+              <p className="line-clamp-3 text-lg font-bold leading-snug drop-shadow-sm">{project.title}</p>
+              <p className="mt-2 text-xs text-white/70">{project.genre}</p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{project.logline}</p>
-        </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
-          className="ml-3 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 text-xs p-1"
-        >
-          삭제
-        </button>
+        )}
+        <label onClick={(event) => event.stopPropagation()} className="absolute inset-x-2 bottom-2 flex cursor-pointer items-center justify-center gap-1 rounded-md bg-black/65 px-2 py-1.5 text-[11px] font-medium text-white opacity-100 backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100">
+          <ImagePlus size={12} />{project.coverImageUrl ? "표지 변경" : "표지 등록"}
+          <input type="file" accept="image/*" className="sr-only" onChange={(event) => onCoverChange(project.id, event.target.files?.[0])} />
+        </label>
       </div>
 
-      <div className="space-y-2 mb-4">
-        <ProgressBar
-          value={project.currentEpisode}
-          total={project.totalEpisodes}
-          label="연재 진행률"
-        />
-        <ProgressBar
-          value={project.successRate}
-          total={100}
-          label="마감 성공 확률"
-          colorize
-        />
-      </div>
-
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-4">
-          <span className="text-muted-foreground">
-            <span className="font-mono font-semibold text-foreground">{project.currentEpisode}</span>/{project.totalEpisodes}화
-          </span>
-          <span className="text-muted-foreground">{project.cadence}</span>
+      <div className="flex min-w-0 flex-1 flex-col p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="mb-1.5 text-xs font-bold text-primary">작품 {String(number).padStart(2, "0")}</p>
+            <h2 className="line-clamp-2 text-lg font-bold leading-snug tracking-[-0.02em] text-text">{project.title}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Badge variant="info">{project.genre}</Badge>
+              {riskBadge(project.riskLevel)}
+            </div>
+            <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-text-muted">{project.logline || "한 줄 소개를 작성하면 작품의 방향을 빠르게 확인할 수 있습니다."}</p>
+          </div>
+          <button onClick={(event) => { event.stopPropagation(); onDelete(project.id); }} className="shrink-0 rounded px-1.5 py-1 text-xs text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100">삭제</button>
         </div>
-        <div className={`flex items-center gap-1 font-semibold font-mono ${dday <= 2 ? "text-red-600" : dday <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
-          {dday <= 0 ? (
-            <><AlertTriangle size={12} />마감 초과</>
-          ) : (
-            <><Clock size={12} />D-{dday}</>
-          )}
+
+        <div className="mb-4 mt-auto space-y-2">
+          <ProgressBar value={project.currentEpisode} total={project.totalEpisodes} label="연재 진행률" />
+          <ProgressBar value={project.successRate} total={100} label="마감 가능성 참고값" colorize />
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
+          <div className="flex items-center gap-4">
+            <span className="text-muted-foreground"><span className="font-mono font-semibold text-foreground">{project.currentEpisode}</span>/{project.totalEpisodes}화</span>
+            <span className="text-muted-foreground">{project.cadence}</span>
+          </div>
+          <div className={`flex items-center gap-1 font-mono font-semibold ${dday <= 2 ? "text-red-600" : dday <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
+            {dday <= 0 ? <><AlertTriangle size={12} />마감 초과</> : <><Clock size={12} />D-{dday}</>}
+          </div>
         </div>
       </div>
     </Card>
@@ -104,6 +118,26 @@ export function ProjectsPage() {
     onError: () => toast.error("삭제 중 오류가 발생했습니다."),
   });
 
+  const coverMutation = useMutation({
+    mutationFn: ({ id, coverImageUrl }: { id: string; coverImageUrl: string }) => projectsApi.update(id, { coverImageUrl }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("작품 표지가 저장되었습니다.");
+    },
+    onError: () => toast.error("표지를 저장하지 못했습니다."),
+  });
+
+  const handleCoverChange = async (id: string, file?: File) => {
+    if (!file) return;
+    try {
+      coverMutation.mutate({ id, coverImageUrl: await optimizeCoverImage(file) });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "표지를 등록하지 못했습니다.");
+    }
+  };
+
+  const orderedProjects = [...(projects ?? [])].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
   return (
     <MainLayout
       pageTitle="프로젝트 목록"
@@ -128,9 +162,9 @@ export function ProjectsPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {projects?.map((p) => (
-                <ProjectCard key={p.id} project={p} onDelete={setDeleteId} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              {orderedProjects.map((p, index) => (
+                <ProjectCard key={p.id} project={p} number={index + 1} onDelete={setDeleteId} onCoverChange={handleCoverChange} />
               ))}
             </div>
           )}

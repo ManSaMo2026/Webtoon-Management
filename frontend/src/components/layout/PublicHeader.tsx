@@ -22,9 +22,8 @@ export function PublicHeader() {
         <div className="flex items-center gap-10">
           <Brand />
           <nav className="hidden items-center gap-7 text-sm text-text-muted md:flex">
-            <a href="#about" className="transition-colors hover:text-text">서비스 소개</a>
-            <a href="#features" className="transition-colors hover:text-text">주요 기능</a>
-            <a href="#workflow" className="transition-colors hover:text-text">이용 방법</a>
+            <a href="#about" className="transition-colors hover:text-text">서비스</a>
+            <a href="#features" className="transition-colors hover:text-text">핵심 기능</a>
           </nav>
         </div>
         <div className="flex items-center gap-2">

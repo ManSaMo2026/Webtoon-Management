@@ -6,14 +6,33 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
-const PROJECT_TABS = [
-  { to: "dashboard", label: "대시보드", icon: LayoutDashboard },
-  { to: "story", label: "스토리", icon: BookOpen },
-  { to: "characters", label: "캐릭터", icon: Users },
-  { to: "world", label: "세계관", icon: Globe2 },
-  { to: "scenes", label: "장면 설계", icon: Film },
-  { to: "schedule", label: "일정 리스크", icon: CalendarClock },
-  { to: "export", label: "내보내기", icon: Download },
+const PROJECT_NAV_GROUPS = [
+  {
+    label: null,
+    items: [{ to: "dashboard", label: "오늘의 작업", icon: LayoutDashboard }],
+  },
+  {
+    label: "작품 기획",
+    description: "이야기와 설정 정리",
+    items: [
+      { to: "story", label: "스토리", icon: BookOpen },
+      { to: "characters", label: "캐릭터", icon: Users },
+      { to: "world", label: "세계관", icon: Globe2 },
+    ],
+  },
+  {
+    label: "제작 관리",
+    description: "장면과 마감 점검",
+    items: [
+      { to: "scenes", label: "장면 설계", icon: Film },
+      { to: "schedule", label: "마감 가능성", icon: CalendarClock },
+    ],
+  },
+  {
+    label: "완료",
+    description: "정리한 자료 저장",
+    items: [{ to: "export", label: "내보내기", icon: Download }],
+  },
 ];
 
 function NavItem({ to, label, icon: Icon, end }: { to: string; label: string; icon: React.ElementType; end?: boolean }) {
@@ -39,9 +58,23 @@ function NavItem({ to, label, icon: Icon, end }: { to: string; label: string; ic
 function ProjectNav() {
   const { id } = useParams<{ id: string }>();
   return (
-    <div className="mt-2">
-      {PROJECT_TABS.map(({ to, label, icon }) => (
-        <NavItem key={to} to={`/projects/${id}/${to}`} label={label} icon={icon} />
+    <div className="mt-2 space-y-5">
+      {PROJECT_NAV_GROUPS.map((group, index) => (
+        <section key={group.label ?? "overview"}>
+          {group.label && (
+            <div className="mb-1.5 px-3">
+              <p className="text-[11px] font-semibold tracking-wide text-sidebar-foreground/75">
+                {index}. {group.label}
+              </p>
+              <p className="mt-0.5 text-[10px] text-sidebar-foreground/40">{group.description}</p>
+            </div>
+          )}
+          <div className="space-y-0.5">
+            {group.items.map(({ to, label, icon }) => (
+              <NavItem key={to} to={`/projects/${id}/${to}`} label={label} icon={icon} />
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );
