@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate, useParams } from "react-router";
 import { clsx } from "clsx";
 import {
-  LayoutDashboard, BookOpen, Users, Film, CalendarClock, Download,
+  LayoutDashboard, BookOpen, Users, Film, CalendarClock, Download, FilePenLine,
   FolderKanban, PlusCircle, Pencil, Globe2, LogOut, Settings,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -15,6 +15,7 @@ const PROJECT_NAV_GROUPS = [
     label: "작품 기획",
     description: "이야기와 설정 정리",
     items: [
+      { to: "info", label: "작품 정보", icon: FilePenLine },
       { to: "story", label: "스토리", icon: BookOpen },
       { to: "characters", label: "캐릭터", icon: Users },
       { to: "world", label: "세계관", icon: Globe2 },

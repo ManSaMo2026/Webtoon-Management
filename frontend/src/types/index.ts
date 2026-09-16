@@ -11,6 +11,8 @@ export interface Project {
   id: string;
   title: string;
   coverImageUrl?: string;
+  platform?: string;
+  tags?: string[];
   genre: Genre;
   totalEpisodes: number;
   cadence: Cadence;

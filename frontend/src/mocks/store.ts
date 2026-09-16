@@ -28,6 +28,8 @@ const SEED_PROJECTS: Project[] = [
   {
     id: "p1",
     title: "검은 태양의 후계자",
+    platform: "네이버웹툰",
+    tags: ["다크판타지", "성장물", "복수극"],
     genre: "판타지",
     totalEpisodes: 60,
     cadence: "주 1회",
@@ -48,6 +50,8 @@ const SEED_PROJECTS: Project[] = [
   {
     id: "p2",
     title: "편의점 아르바이트생",
+    platform: "카카오페이지",
+    tags: ["로맨스", "힐링물", "일상"],
     genre: "로맨스",
     totalEpisodes: 30,
     cadence: "주 2회",
@@ -128,6 +132,17 @@ function initSeed() {
 }
 
 initSeed();
+
+// Backfill only the bundled demo projects that may already exist in localStorage.
+const projectsForPlatformMigration = load<Project>(KEYS.projects);
+const migratedProjects = projectsForPlatformMigration.map((project) => {
+  if (project.id === "p1" && project.title === "검은 태양의 후계자") return { ...project, platform: project.platform || "네이버웹툰", tags: project.tags?.length ? project.tags : ["다크판타지", "성장물", "복수극"] };
+  if (project.id === "p2" && project.title === "편의점 아르바이트생") return { ...project, platform: project.platform || "카카오페이지", tags: project.tags?.length ? project.tags : ["로맨스", "힐링물", "일상"] };
+  return project;
+});
+if (JSON.stringify(migratedProjects) !== JSON.stringify(projectsForPlatformMigration)) {
+  save(KEYS.projects, migratedProjects);
+}
 
 const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));
 

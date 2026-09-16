@@ -11,12 +11,15 @@ import { Input, Textarea, Select } from "../components/ui/FormField";
 import { NumberInput } from "../components/ui/NumberInput";
 import { RadioGroup } from "../components/ui/RadioGroup";
 import { ToggleSwitch } from "../components/ui/ToggleSwitch";
+import { TagInput } from "../components/ui/TagInput";
 import type { Genre, Cadence, ColorMode, BgComplexity } from "../types";
 import { optimizeCoverImage } from "../utils/image";
 
 interface FormData {
   title: string;
   coverImageUrl: string;
+  platform: string;
+  tags: string[];
   genre: Genre;
   totalEpisodes: number;
   cadence: Cadence;
@@ -35,6 +38,8 @@ const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 const INITIAL: FormData = {
   title: "",
   coverImageUrl: "",
+  platform: "",
+  tags: [],
   genre: "판타지",
   totalEpisodes: 60,
   cadence: "주 1회",
@@ -50,6 +55,7 @@ const INITIAL: FormData = {
 
 const GENRE_OPTIONS: Genre[] = ["판타지", "로맨스", "액션", "스릴러", "일상", "SF", "공포", "스포츠", "기타"];
 const CADENCE_OPTIONS: Cadence[] = ["주 1회", "주 2회", "격주", "월 1회"];
+const PLATFORM_OPTIONS = ["네이버웹툰", "카카오페이지", "카카오웹툰", "리디", "레진코믹스", "봄툰", "탑툰", "포스타입", "개인 연재"];
 
 function StepHeader({ step }: { step: 1 | 2 }) {
   return (
@@ -136,9 +142,16 @@ export function NewProjectPage() {
                   </div>
                 </div>
               </div>
-              <Select label="장르" value={form.genre} onChange={(event) => set({ genre: event.target.value as Genre })} hint="추천이나 분류에 활용됩니다.">
-                {GENRE_OPTIONS.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
-              </Select>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Select label="장르" value={form.genre} onChange={(event) => set({ genre: event.target.value as Genre })} hint="추천이나 분류에 활용됩니다.">
+                  {GENRE_OPTIONS.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+                </Select>
+                <div>
+                  <Input label="연재 플랫폼" value={form.platform} onChange={(event) => set({ platform: event.target.value })} placeholder="예: 네이버웹툰" list="platform-options" hint="미정이면 비워두어도 됩니다." />
+                  <datalist id="platform-options">{PLATFORM_OPTIONS.map((platform) => <option key={platform} value={platform} />)}</datalist>
+                </div>
+              </div>
+              <TagInput value={form.tags} onChange={(tags) => set({ tags })} />
               <Textarea label="작품 한 줄 소개" value={form.logline} onChange={(event) => set({ logline: event.target.value })} placeholder="선택 사항입니다. 작품의 주인공과 핵심 사건을 한 문장으로 적어보세요." rows={3} hint="비워두고 나중에 스토리 메뉴에서 작성해도 됩니다." />
             </div>
 

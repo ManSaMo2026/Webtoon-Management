@@ -15,6 +15,7 @@ import { WorldSettingTab } from "../pages/tabs/WorldSettingTab";
 import { LandingPage } from "../pages/LandingPage";
 import { AuthPage } from "../pages/AuthPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { ProjectInfoTab } from "../pages/tabs/ProjectInfoTab";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 const queryClient = new QueryClient({
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/projects/:id" element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<DashboardTab />} />
+              <Route path="info" element={<ProjectInfoTab />} />
               <Route path="story" element={<StoryTab />} />
               <Route path="characters" element={<CharactersTab />} />
               <Route path="world" element={<WorldSettingTab />} />

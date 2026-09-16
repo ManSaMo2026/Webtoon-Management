@@ -72,9 +72,11 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
             <h2 className="line-clamp-2 text-lg font-bold leading-snug tracking-[-0.02em] text-text">{project.title}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Badge variant="info">{project.genre}</Badge>
+              <Badge variant="neutral">{project.platform?.trim() || "플랫폼 미정"}</Badge>
               {riskBadge(project.riskLevel)}
             </div>
             <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-text-muted">{project.logline || "한 줄 소개를 작성하면 작품의 방향을 빠르게 확인할 수 있습니다."}</p>
+            {project.tags && project.tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{project.tags.slice(0, 3).map((tag) => <span key={tag} className="text-xs font-medium text-primary">#{tag}</span>)}{project.tags.length > 3 && <span className="text-xs text-muted-foreground">+{project.tags.length - 3}</span>}</div>}
           </div>
           <button onClick={(event) => { event.stopPropagation(); onDelete(project.id); }} className="shrink-0 rounded px-1.5 py-1 text-xs text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100">삭제</button>
         </div>

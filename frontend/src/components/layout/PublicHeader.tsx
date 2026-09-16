@@ -1,15 +1,14 @@
 import { Link } from "react-router";
 import { Pencil } from "lucide-react";
-import { Button } from "../ui/Button";
 import { useAuth } from "../../contexts/AuthContext";
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
-    <Link to="/" className="flex items-center gap-2.5" aria-label="웹툰메이커 홈">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm">
+    <Link to="/" className="identity-brand" aria-label="웹툰메이커 홈">
+      <span className="identity-brand-mark">
         <Pencil size={15} className="text-white" />
       </span>
-      <span className={`text-sm font-bold tracking-tight ${light ? "text-white" : "text-foreground"}`}>웹툰메이커</span>
+      <span className={light ? "text-white" : ""}>웹툰메이커</span>
     </Link>
   );
 }
@@ -17,25 +16,16 @@ export function Brand({ light = false }: { light?: boolean }) {
 export function PublicHeader() {
   const { user } = useAuth();
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-white/90 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <div className="flex items-center gap-10">
+    <header className="identity-public-header">
+      <div className="identity-header-inner">
+        <div className="identity-header-left">
           <Brand />
-          <nav className="hidden items-center gap-7 text-sm text-text-muted md:flex">
-            <a href="#about" className="transition-colors hover:text-text">서비스</a>
-            <a href="#features" className="transition-colors hover:text-text">핵심 기능</a>
+          <nav className="identity-public-nav" aria-label="주요 메뉴">
+            <a href="#about">서비스</a>
+            <a href="#features">핵심 기능</a>
           </nav>
         </div>
-        <div className="flex items-center gap-2">
-          {user ? (
-            <Link to="/projects"><Button size="sm">내 프로젝트</Button></Link>
-          ) : (
-            <>
-              <Link to="/login"><Button size="sm" variant="ghost">로그인</Button></Link>
-              <Link to="/signup"><Button size="sm">무료로 시작하기</Button></Link>
-            </>
-          )}
-        </div>
+        <Link to={user ? "/projects" : "/login"} className="identity-header-action">내 프로젝트</Link>
       </div>
     </header>
   );
