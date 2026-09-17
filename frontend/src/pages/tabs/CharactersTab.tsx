@@ -7,13 +7,23 @@ import { charactersApi } from "../../api/characters";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
-import { Input, Textarea } from "../../components/ui/FormField";
+import { Input, Select, Textarea } from "../../components/ui/FormField";
 import { ConfirmModal, Modal } from "../../components/ui/Modal";
 import { EmptyState, SkeletonList } from "../../components/ui/Skeleton";
-import type { Character } from "../../types";
+import { CreativeChat } from "../../components/ai/CreativeChat";
+import type { Character, CharacterRoleGroup } from "../../types";
+
+const ROLE_GROUPS: CharacterRoleGroup[] = ["주연", "조연", "기타"];
+
+function getRoleGroup(character: Character): CharacterRoleGroup {
+  if (character.roleGroup) return character.roleGroup;
+  if (["주인공", "히로인", "주연"].some((role) => character.role.includes(role))) return "주연";
+  if (["조연", "라이벌", "조력자", "악역"].some((role) => character.role.includes(role))) return "조연";
+  return "기타";
+}
 
 const EMPTY_CHAR: Omit<Character, "id"> = {
-  projectId: "", name: "", role: "", personality: "", goal: "", speechStyle: "", taboo: "", secret: "", keywords: [],
+  projectId: "", name: "", role: "", roleGroup: "주연", personality: "", goal: "", speechStyle: "", taboo: "", secret: "", keywords: [],
   imageUrl: "", gender: "", age: "", origin: "", occupation: "", likes: "", dislikes: "", backstory: "", relationships: "",
 };
 
@@ -81,7 +91,10 @@ function CharacterModal({ open, onClose, projectId, character }: { open: boolean
 
       <FormSection title="기본 정보"><div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Input label="이름" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="예: 한서윤" />
-        <Input label="역할" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="예: 주인공, 조력자, 라이벌, 악역" />
+        <Select label="캐릭터 그룹" value={form.roleGroup ?? "주연"} onChange={(e) => setForm((f) => ({ ...f, roleGroup: e.target.value as CharacterRoleGroup }))}>
+          {ROLE_GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}
+        </Select>
+        <Input label="세부 역할" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="예: 주인공, 조력자, 라이벌, 악역" />
         <Input label="성별" value={form.gender ?? ""} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} placeholder="예: 여성, 남성, 비공개, 기타" />
         <Input label="나이" value={form.age ?? ""} onChange={(e) => setForm((f) => ({ ...f, age: e.target.value }))} placeholder="예: 24세, 고등학생, 나이 불명" />
         <Input label="직업/소속" value={form.occupation ?? ""} onChange={(e) => setForm((f) => ({ ...f, occupation: e.target.value }))} placeholder="예: 웹툰 작가 지망생, 왕실 기사, 연구원" />
@@ -136,11 +149,22 @@ export function CharactersTab() {
   const checkConflicts = async () => { setCheckLoading(true); try { setConflicts(await charactersApi.checkConflicts(projectId!)); } finally { setCheckLoading(false); } };
   const openCreate = () => { setEditChar(undefined); setModalOpen(true); };
 
-  return <div className="space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-foreground">캐릭터 <span className="text-muted-foreground font-normal ml-1">{characters?.length ?? 0}명</span></h2><div className="flex gap-2"><Button size="sm" variant="outline" loading={checkLoading} onClick={checkConflicts}><ShieldAlert size={14} />설정 충돌 체크</Button><Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button></div></div>
-    {conflicts !== null && <Card className="border-amber-200 bg-amber-50"><div className="flex items-start gap-2"><ShieldAlert size={16} className="text-amber-600 mt-0.5 shrink-0" /><div className="flex-1"><p className="text-sm font-semibold text-amber-800 mb-2">설정 충돌 점검 결과</p>{conflicts.length === 0 ? <p className="text-sm text-amber-700">현재 입력된 설정에서 확인할 충돌이 없습니다.</p> : <ul className="space-y-1">{conflicts.map((item) => <li key={item} className="text-sm text-amber-700">• {item}</li>)}</ul>}</div><button type="button" aria-label="점검 결과 닫기" onClick={() => setConflicts(null)} className="text-amber-500 hover:text-amber-700"><X size={14} /></button></div></Card>}
-    {isLoading ? <SkeletonList count={3} /> : !characters?.length ? <EmptyState title="등록된 캐릭터가 없습니다" description="첫 번째 캐릭터의 설정과 참고 이미지를 등록해보세요" action={<Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button>} /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{characters.map((char) => <CharacterCard key={char.id} char={char} onEdit={() => { setEditChar(char); setModalOpen(true); }} onDelete={() => setDeleteId(char.id)} />)}</div>}
-    <CharacterModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId!} character={editChar} />
-    <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMutation.mutate(deleteId)} title="캐릭터 삭제" message="이 캐릭터를 삭제하시겠습니까?" loading={deleteMutation.isPending} />
+  return <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="min-w-0 space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-foreground">캐릭터 <span className="text-muted-foreground font-normal ml-1">{characters?.length ?? 0}명</span></h2><div className="flex gap-2"><Button size="sm" variant="outline" loading={checkLoading} onClick={checkConflicts}><ShieldAlert size={14} />설정 충돌 체크</Button><Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button></div></div>
+      {conflicts !== null && <Card className="border-amber-200 bg-amber-50"><div className="flex items-start gap-2"><ShieldAlert size={16} className="text-amber-600 mt-0.5 shrink-0" /><div className="flex-1"><p className="text-sm font-semibold text-amber-800 mb-2">설정 충돌 점검 결과</p>{conflicts.length === 0 ? <p className="text-sm text-amber-700">현재 입력된 설정에서 확인할 충돌이 없습니다.</p> : <ul className="space-y-1">{conflicts.map((item) => <li key={item} className="text-sm text-amber-700">• {item}</li>)}</ul>}</div><button type="button" aria-label="점검 결과 닫기" onClick={() => setConflicts(null)} className="text-amber-500 hover:text-amber-700"><X size={14} /></button></div></Card>}
+      {isLoading ? <SkeletonList count={3} /> : !characters?.length ? <EmptyState title="등록된 캐릭터가 없습니다" description="첫 번째 캐릭터를 추가하고 주연·조연·기타 그룹으로 관리해보세요" action={<Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button>} /> : <div className="space-y-5">
+        {ROLE_GROUPS.map((group) => {
+          const groupCharacters = characters.filter((character) => getRoleGroup(character) === group);
+          return <section key={group} aria-labelledby={`character-group-${group}`} className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-3 flex items-center justify-between border-b border-border pb-3"><div><h3 id={`character-group-${group}`} className="text-sm font-semibold text-foreground">{group}</h3><p className="mt-0.5 text-xs text-muted-foreground">{group === "주연" ? "이야기의 중심 갈등과 변화를 이끄는 인물" : group === "조연" ? "주연의 선택과 사건 전개에 영향을 주는 인물" : "단역, 엑스트라, 분류 전 인물"}</p></div><span className="font-mono text-xs font-semibold text-primary">{groupCharacters.length}명</span></div>
+            {groupCharacters.length ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{groupCharacters.map((char) => <CharacterCard key={char.id} char={char} onEdit={() => { setEditChar(char); setModalOpen(true); }} onDelete={() => setDeleteId(char.id)} />)}</div> : <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">이 그룹에 등록된 캐릭터가 없습니다.</p>}
+          </section>;
+        })}
+      </div>}
+      <CharacterModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId!} character={editChar} />
+      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMutation.mutate(deleteId)} title="캐릭터 삭제" message="이 캐릭터를 삭제하시겠습니까?" loading={deleteMutation.isPending} />
+    </div>
+    <CreativeChat area="character" context={`현재 등록된 캐릭터 ${characters?.length ?? 0}명`} />
   </div>;
 }

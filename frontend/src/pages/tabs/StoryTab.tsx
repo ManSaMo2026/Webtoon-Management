@@ -12,6 +12,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal, ConfirmModal } from "../../components/ui/Modal";
 import { Input, Textarea, Select } from "../../components/ui/FormField";
 import { SkeletonList, EmptyState } from "../../components/ui/Skeleton";
+import { CreativeChat } from "../../components/ai/CreativeChat";
 import type { Character, Episode, Foreshadow, Act, EpisodePurpose, ForeshadowImportance, ForeshadowStatus } from "../../types";
 
 const PURPOSE_OPTIONS: EpisodePurpose[] = ["설정", "전개", "클라이맥스", "반전", "여운"];
@@ -21,6 +22,18 @@ const purposeColor: Record<EpisodePurpose, "info" | "default" | "danger" | "warn
 const foreshadowBadge: Record<ForeshadowStatus, "warning" | "success" | "info"> = {
   미회수: "warning", 회수완료: "success", 진행중: "info",
 };
+
+function StoryWorkflowGuide() {
+  const steps = [
+    ["01", "큰 줄기", "시작·전개·결말의 방향을 먼저 정합니다."],
+    ["02", "회차 전개", "큰 줄기를 독자가 읽을 회차로 나눕니다."],
+    ["03", "복선 점검", "심은 단서와 회수할 시점을 연결합니다."],
+  ];
+  return <section className="rounded-lg border border-border bg-card p-5" aria-labelledby="story-workflow-title">
+    <div className="mb-4"><p className="text-xs font-semibold text-primary">추천 작성 순서</p><h2 id="story-workflow-title" className="mt-1 text-base font-bold text-foreground">처음이라면 위에서 아래로 작성하세요</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">모든 내용을 한 번에 완성하지 않아도 됩니다. 큰 방향을 정한 뒤 회차와 복선을 구체화하면 수정 범위를 줄일 수 있습니다.</p></div>
+    <ol className="grid overflow-hidden rounded-md border border-border md:grid-cols-3">{steps.map(([number, title, description], index) => <li key={number} className={`p-3.5 ${index > 0 ? "border-t border-border md:border-t-0 md:border-l" : ""}`}><div className="flex items-center gap-2"><span className="font-mono text-xs font-bold text-primary">{number}</span><strong className="text-sm text-foreground">{title}</strong></div><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{description}</p></li>)}</ol>
+  </section>;
+}
 
 // --- Acts Section ---
 function ActsSection({ projectId }: { projectId: string }) {
@@ -43,22 +56,11 @@ function ActsSection({ projectId }: { projectId: string }) {
     onError: () => toast.error("저장 실패"),
   });
 
-  const aiMutation = useMutation({
-    mutationFn: () => storyApi.getAiActSuggestion(projectId),
-    onSuccess: (data) => { setForm({ act1: data.act1, act2: data.act2, act3: data.act3 }); toast.success("AI 제안이 반영되었습니다."); },
-    onError: () => toast.error("AI 제안을 불러오지 못했습니다."),
-  });
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>3막 구조</CardTitle>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" loading={aiMutation.isPending} onClick={() => aiMutation.mutate()}>
-            <Sparkles size={12} />AI 제안
-          </Button>
-          <Button size="sm" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>저장</Button>
-        </div>
+        <div><CardTitle>1. 이야기의 큰 줄기</CardTitle><p className="mt-1 text-xs text-muted-foreground">각 막에서 인물이 무엇을 선택하고 어떻게 달라지는지만 먼저 적어보세요.</p></div>
+        <Button size="sm" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>저장</Button>
       </CardHeader>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {([["1막 (설정)", "act1"], ["2막 (전개)", "act2"], ["3막 (결말)", "act3"]] as const).map(([label, key]) => (
@@ -152,7 +154,7 @@ function EpisodesSection({ projectId }: { projectId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>회차 목록</CardTitle>
+        <div><CardTitle>2. 회차별 전개</CardTitle><p className="mt-1 text-xs text-muted-foreground">한 회차의 목적, 핵심 사건, 다음 화를 보게 할 마지막 장면을 기록합니다.</p></div>
         <Button size="sm" onClick={() => { setEditEp(undefined); setModalOpen(true); }}>
           <Plus size={14} />회차 추가
         </Button>
@@ -342,7 +344,7 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
       </div>
       <Card>
       <CardHeader>
-        <CardTitle>복선 관리</CardTitle>
+        <div><CardTitle>3. 복선과 회수</CardTitle><p className="mt-1 text-xs text-muted-foreground">중요한 단서가 언제 등장하고 언제 회수되는지 놓치지 않도록 연결합니다.</p></div>
         <div className="flex flex-wrap gap-2 justify-end">
           <button
             onClick={() => setFilterUnresolved(f => !f)}
@@ -431,10 +433,14 @@ export function StoryTab() {
   const { id } = useParams<{ id: string }>();
   if (!id) return null;
   return (
-    <div className="space-y-5">
-      <ActsSection projectId={id} />
-      <EpisodesSection projectId={id} />
-      <ForeshadowSection projectId={id} />
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="min-w-0 space-y-5">
+        <StoryWorkflowGuide />
+        <ActsSection projectId={id} />
+        <EpisodesSection projectId={id} />
+        <ForeshadowSection projectId={id} />
+      </div>
+      <CreativeChat area="story" context={`프로젝트 ${id}의 스토리, 회차, 복선을 정리하는 중`} />
     </div>
   );
 }

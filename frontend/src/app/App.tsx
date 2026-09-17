@@ -16,6 +16,7 @@ import { LandingPage } from "../pages/LandingPage";
 import { AuthPage } from "../pages/AuthPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { ProjectInfoTab } from "../pages/tabs/ProjectInfoTab";
+import { LegalPage } from "../pages/LegalPage";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 const queryClient = new QueryClient({
@@ -39,6 +40,8 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/signup" element={<AuthPage mode="signup" />} />
+            <Route path="/terms" element={<LegalPage type="terms" />} />
+            <Route path="/privacy" element={<LegalPage type="privacy" />} />
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/projects/new" element={<ProtectedRoute><NewProjectPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

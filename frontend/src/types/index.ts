@@ -27,6 +27,7 @@ export interface Project {
   nextDeadline: string; // ISO date string
   successRate: number; // 0-100
   riskLevel: RiskLevel;
+  status?: "기획중" | "연재중" | "완결";
   createdAt: string;
   updatedAt: string;
 }
@@ -52,11 +53,14 @@ export interface Foreshadow {
   relatedCharacterIds?: string[];
 }
 
+export type CharacterRoleGroup = "주연" | "조연" | "기타";
+
 export interface Character {
   id: string;
   projectId: string;
   name: string;
   role: string;
+  roleGroup?: CharacterRoleGroup;
   personality: string;
   goal: string;
   speechStyle: string;
@@ -85,6 +89,8 @@ export interface WorldSetting {
   technologyOrMagic: string;
   moodTone: string;
   forbiddenSettings: string;
+  researchNotes?: string;
+  referenceSources?: string;
 }
 
 export interface SceneRequest {

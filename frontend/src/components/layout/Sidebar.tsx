@@ -104,7 +104,7 @@ export function Sidebar({ projectMode, projectTitle }: SidebarProps) {
           <div className="w-7 h-7 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <Pencil size={14} className="text-white" />
           </div>
-          <Link to="/" className="text-white font-bold text-sm tracking-tight">웹툰메이커</Link>
+          <Link to="/" className="text-white font-bold text-sm tracking-tight">만사모</Link>
         </div>
       </div>
 

@@ -4,11 +4,11 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
-    <Link to="/" className="identity-brand" aria-label="웹툰메이커 홈">
+    <Link to="/" className="identity-brand" aria-label="만사모 홈">
       <span className="identity-brand-mark">
         <Pencil size={15} className="text-white" />
       </span>
-      <span className={light ? "text-white" : ""}>웹툰메이커</span>
+      <span className={light ? "text-white" : ""}>만사모</span>
     </Link>
   );
 }
@@ -21,11 +21,14 @@ export function PublicHeader() {
         <div className="identity-header-left">
           <Brand />
           <nav className="identity-public-nav" aria-label="주요 메뉴">
-            <a href="#about">서비스</a>
-            <a href="#features">핵심 기능</a>
+            <a href="/#about">서비스</a>
+            <a href="/#features">핵심 기능</a>
           </nav>
         </div>
-        <Link to={user ? "/projects" : "/login"} className="identity-header-action">내 프로젝트</Link>
+        <div className="identity-header-actions">
+          {!user && <Link to="/login" className="identity-header-login">로그인</Link>}
+          <Link to={user ? "/projects" : "/signup"} className="identity-header-action">{user ? "내 프로젝트" : "무료로 시작하기"}</Link>
+        </div>
       </div>
     </header>
   );

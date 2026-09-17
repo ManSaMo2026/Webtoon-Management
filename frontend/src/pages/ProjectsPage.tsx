@@ -41,6 +41,7 @@ const COVER_STYLES: Record<string, string> = {
 function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Project; number: number; onDelete: (id: string) => void; onCoverChange: (id: string, file?: File) => void }) {
   const navigate = useNavigate();
   const dday = getDday(project.nextDeadline);
+  const isCompleted = project.status === "완결" || project.currentEpisode >= project.totalEpisodes;
 
   return (
     <Card padding="none"
@@ -73,7 +74,7 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Badge variant="info">{project.genre}</Badge>
               <Badge variant="neutral">{project.platform?.trim() || "플랫폼 미정"}</Badge>
-              {riskBadge(project.riskLevel)}
+              {isCompleted ? <Badge variant="success">완결</Badge> : riskBadge(project.riskLevel)}
             </div>
             <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-text-muted">{project.logline || "한 줄 소개를 작성하면 작품의 방향을 빠르게 확인할 수 있습니다."}</p>
             {project.tags && project.tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{project.tags.slice(0, 3).map((tag) => <span key={tag} className="text-xs font-medium text-primary">#{tag}</span>)}{project.tags.length > 3 && <span className="text-xs text-muted-foreground">+{project.tags.length - 3}</span>}</div>}
@@ -83,7 +84,7 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
 
         <div className="mb-4 mt-auto space-y-2">
           <ProgressBar value={project.currentEpisode} total={project.totalEpisodes} label="연재 진행률" />
-          <ProgressBar value={project.successRate} total={100} label="마감 가능성 참고값" colorize />
+          {!isCompleted && <ProgressBar value={project.successRate} total={100} label="마감 가능성 참고값" colorize />}
         </div>
 
         <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
@@ -91,8 +92,8 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
             <span className="text-muted-foreground"><span className="font-mono font-semibold text-foreground">{project.currentEpisode}</span>/{project.totalEpisodes}화</span>
             <span className="text-muted-foreground">{project.cadence}</span>
           </div>
-          <div className={`flex items-center gap-1 font-mono font-semibold ${dday <= 2 ? "text-red-600" : dday <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
-            {dday <= 0 ? <><AlertTriangle size={12} />마감 초과</> : <><Clock size={12} />D-{dday}</>}
+          <div className={`flex items-center gap-1 font-mono font-semibold ${isCompleted ? "text-primary" : dday <= 2 ? "text-red-600" : dday <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
+            {isCompleted ? <>총 {project.totalEpisodes}화 완결</> : dday <= 0 ? <><AlertTriangle size={12} />마감 초과</> : <><Clock size={12} />D-{dday}</>}
           </div>
         </div>
       </div>

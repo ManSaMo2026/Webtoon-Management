@@ -69,6 +69,29 @@ const SEED_PROJECTS: Project[] = [
     createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
+  {
+    id: "demo-hungry-dinner",
+    title: "공복의 저녁식사",
+    platform: "네이버웹툰",
+    tags: ["요리", "학원", "성장", "레퍼런스"],
+    genre: "일상",
+    totalEpisodes: 220,
+    cadence: "주 1회",
+    weeklyHours: 30,
+    avgCuts: 50,
+    colorMode: "컬러",
+    bgComplexity: "보통",
+    hasAssistant: false,
+    logline: "맛있는 음식을 좋아하는 복희가 만두와 저녁을 나누며 성장하는 학원 이야기",
+    conflict: "먹는 즐거움과 관계 속 갈등을 지나며 성장하는 청소년들",
+    currentEpisode: 220,
+    nextDeadline: "2019-06-14T00:00:00.000Z",
+    successRate: 100,
+    riskLevel: "낮음",
+    status: "완결",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 const SEED_EPISODES: Episode[] = [
@@ -85,7 +108,7 @@ const SEED_FORESHADOWS: Foreshadow[] = [
 
 const SEED_CHARACTERS: Character[] = [
   {
-    id: "c1", projectId: "p1", name: "카이 레온", role: "주인공",
+    id: "c1", projectId: "p1", name: "카이 레온", role: "주인공", roleGroup: "주연",
     personality: "냉정하고 계산적이지만 내면엔 정의감",
     goal: "황제를 타도하고 왕국을 구한다",
     speechStyle: "짧고 단호하게 말함",
@@ -94,13 +117,31 @@ const SEED_CHARACTERS: Character[] = [
     keywords: ["냉혹", "정의", "고독"],
   },
   {
-    id: "c2", projectId: "p1", name: "루나 실버", role: "히로인",
+    id: "c2", projectId: "p1", name: "루나 실버", role: "히로인", roleGroup: "주연",
     personality: "밝고 긍정적, 하지만 슬픔을 숨김",
     goal: "실종된 오빠를 찾는다",
     speechStyle: "친근하고 따뜻하게 말함",
     taboo: "오빠 이야기에 예민하게 반응",
     secret: "마법 능력이 있음을 숨기고 있음",
     keywords: ["따뜻함", "희망", "비밀"],
+  },
+  {
+    id: "demo-bokhui", projectId: "demo-hungry-dinner", name: "공복희", role: "주인공", roleGroup: "주연",
+    personality: "맛있는 음식을 좋아하고 사람들과 식사하며 관계를 넓혀가는 고등학생",
+    goal: "새로운 학교생활과 관계 속에서 자신만의 방식으로 성장한다",
+    speechStyle: "", taboo: "", secret: "", keywords: ["식탐", "성장", "학원생활"],
+  },
+  {
+    id: "demo-mandu", projectId: "demo-hungry-dinner", name: "손민주(만두)", role: "친구·요리 담당", roleGroup: "주연",
+    personality: "요리와 만화를 좋아하며 자신의 방식이 뚜렷한 인물",
+    goal: "친구들과 맛있는 식사를 나누며 관계를 이어간다",
+    speechStyle: "", taboo: "", secret: "", keywords: ["요리", "친구", "마이페이스"],
+  },
+  {
+    id: "demo-jinsu", projectId: "demo-hungry-dinner", name: "김진수", role: "친구", roleGroup: "주연",
+    personality: "복희와 만두의 식사와 학교생활에 함께하는 친구",
+    goal: "친구들과의 관계 속에서 자신의 마음과 갈등을 마주한다",
+    speechStyle: "", taboo: "", secret: "", keywords: ["친구", "학원", "관계"],
   },
 ];
 
@@ -110,6 +151,29 @@ const SEED_ACTS: Act[] = [
     act1: "1-15화: 카이가 자신의 출생을 알게 되고, 금지된 마법을 각성한다. 왕국의 부패를 목격하며 저항군에 합류를 결심한다.",
     act2: "16-40화: 저항군과 함께 황제의 비밀 기지를 파괴하며 세력을 키운다. 루나와의 관계가 깊어지지만 진실이 밝혀지면서 갈등이 시작된다.",
     act3: "41-60화: 황제가 최종 계획을 발동한다. 카이는 자신의 혈통을 받아들이고 진정한 왕으로서 최후의 결전을 치른다.",
+  },
+  {
+    projectId: "demo-hungry-dinner",
+    act1: "소개용 요약: 복희가 학교생활을 시작하고 만두와 저녁을 함께 먹으며 새로운 관계를 만들어간다.",
+    act2: "소개용 요약: 음식과 식사 자리를 중심으로 친구들의 관계와 각자의 고민이 구체화된다.",
+    act3: "소개용 요약: 여러 갈등을 지나며 복희와 친구들이 서로를 이해하고 성장해간다.",
+  },
+];
+
+const SEED_WORLD_SETTINGS: WorldSetting[] = [
+  {
+    id: "world-demo-hungry-dinner",
+    projectId: "demo-hungry-dinner",
+    era: "2010년대 대한민국 현대",
+    mainPlaces: "고등학교, 친구들이 함께 식사하는 집과 식탁, 동네 생활 공간",
+    worldRules: "현실적인 학교생활을 바탕으로 음식과 식사 장면이 인물 관계를 이어주는 중심 장치로 작동한다.",
+    organizations: "학교와 학급, 가족과 친구 관계",
+    culture: "학업과 친구 관계를 함께 겪는 10대 청소년의 일상",
+    technologyOrMagic: "현실 기반 작품으로 별도의 마법이나 초능력 체계가 없다.",
+    moodTone: "음식의 즐거움과 청소년 관계의 갈등이 함께 있는 학원 성장물",
+    forbiddenSettings: "공식 작품에 확인되지 않은 설정은 사실처럼 추가하지 않는다.",
+    researchNotes: "작품의 기본 정보와 공개 소개를 바탕으로 만든 팀 발표용 레퍼런스 프로젝트. 작업 시간, 평균 컷 수 등 제작 데이터는 공개 정보가 아니므로 화면 시연용 가정값을 사용한다.",
+    referenceSources: "네이버 시리즈 《공복의 저녁식사》 https://series.naver.com/comic/detail.series?productNo=2201775\nMBN 인터뷰·기사 https://www.mbn.co.kr/pages/news/newsPrintView.php?news_seq_no=2488558",
   },
 ];
 
@@ -127,6 +191,7 @@ function initSeed() {
     save(KEYS.characters, SEED_CHARACTERS);
     save(KEYS.acts, SEED_ACTS);
     save(KEYS.todos, SEED_TODOS);
+    save(KEYS.worldSettings, SEED_WORLD_SETTINGS);
     localStorage.setItem("wt_seeded", "1");
   }
 }
@@ -142,6 +207,28 @@ const migratedProjects = projectsForPlatformMigration.map((project) => {
 });
 if (JSON.stringify(migratedProjects) !== JSON.stringify(projectsForPlatformMigration)) {
   save(KEYS.projects, migratedProjects);
+}
+
+// 기존 브라우저에도 팀 발표용 레퍼런스 프로젝트를 한 번만 추가합니다.
+const HUNGRY_DINNER_SEED_KEY = "wt_demo_hungry_dinner_seeded";
+if (!localStorage.getItem(HUNGRY_DINNER_SEED_KEY)) {
+  const demoProject = SEED_PROJECTS.find((project) => project.id === "demo-hungry-dinner")!;
+  const currentProjects = load<Project>(KEYS.projects);
+  if (!currentProjects.some((project) => project.id === demoProject.id || project.title === demoProject.title)) save(KEYS.projects, [...currentProjects, demoProject]);
+
+  const demoCharacters = SEED_CHARACTERS.filter((character) => character.projectId === demoProject.id);
+  const currentCharacters = load<Character>(KEYS.characters);
+  save(KEYS.characters, [...currentCharacters, ...demoCharacters.filter((character) => !currentCharacters.some((item) => item.id === character.id))]);
+
+  const demoAct = SEED_ACTS.find((act) => act.projectId === demoProject.id)!;
+  const currentActs = load<Act>(KEYS.acts);
+  if (!currentActs.some((act) => act.projectId === demoProject.id)) save(KEYS.acts, [...currentActs, demoAct]);
+
+  const demoWorld = SEED_WORLD_SETTINGS.find((setting) => setting.projectId === demoProject.id)!;
+  const currentWorldSettings = load<WorldSetting>(KEYS.worldSettings);
+  if (!currentWorldSettings.some((setting) => setting.projectId === demoProject.id)) save(KEYS.worldSettings, [...currentWorldSettings, demoWorld]);
+
+  localStorage.setItem(HUNGRY_DINNER_SEED_KEY, "1");
 }
 
 const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));

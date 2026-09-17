@@ -21,6 +21,7 @@ export function DashboardTab() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const dday = getDday(project.nextDeadline);
+  const isCompleted = project.status === "완결" || project.currentEpisode >= project.totalEpisodes;
   const scheduleResult = scheduleApi.calculateSync({
     cuts: project.avgCuts,
     weeklyHours: project.weeklyHours,
@@ -29,7 +30,9 @@ export function DashboardTab() {
     hasAssistant: project.hasAssistant,
     deadlineDays: Math.max(1, dday),
   });
-  const nextAction = project.logline.trim()
+  const nextAction = isCompleted
+    ? { to: `/projects/${id}/story`, title: "완결 작품의 구성 자료를 살펴보세요", description: "소개용 레퍼런스 프로젝트입니다. 스토리, 캐릭터, 세계관 탭에서 정리 방식을 확인할 수 있습니다.", label: "스토리 자료 보기" }
+    : project.logline.trim()
     ? { to: `/projects/${id}/schedule`, title: "첫 일정 진단을 확인해보세요", description: "입력한 작업량과 마감일을 바탕으로 부족한 시간을 확인할 수 있습니다.", label: "일정 진단 보기" }
     : { to: `/projects/${id}/story`, title: "먼저 작품의 한 줄 소개를 적어보세요", description: "작품의 중심을 정하면 캐릭터와 장면을 설계하기 쉬워집니다.", label: "스토리 시작하기" };
   const [newTodo, setNewTodo] = useState("");
@@ -74,19 +77,18 @@ export function DashboardTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* D-day */}
         <Card className="flex flex-col items-center justify-center text-center py-6">
-          <div className={`text-3xl font-bold font-mono mb-1 ${dday <= 2 ? "text-red-500" : dday <= 5 ? "text-amber-500" : "text-emerald-500"}`}>
-            {dday <= 0 ? "마감 초과" : `D-${dday}`}
+          <div className={`text-3xl font-bold font-mono mb-1 ${isCompleted ? "text-primary" : dday <= 2 ? "text-red-500" : dday <= 5 ? "text-amber-500" : "text-emerald-500"}`}>
+            {isCompleted ? "완결" : dday <= 0 ? "마감 초과" : `D-${dday}`}
           </div>
-          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={11} />다음 마감</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={11} />{isCompleted ? "연재 상태" : "다음 마감"}</p>
+          {!isCompleted && <p className="text-xs text-muted-foreground mt-1">
             {new Date(project.nextDeadline).toLocaleDateString("ko-KR")}
-          </p>
+          </p>}
         </Card>
 
         {/* Success rate */}
         <Card className="flex flex-col items-center justify-center py-4">
-          <Gauge value={scheduleResult.successRate} size="md" colorize label="마감 가능성 참고값" />
-          <p className="mt-1 text-center text-[11px] text-muted-foreground">현재 입력값을 이용한 수식 기반 추정</p>
+          {isCompleted ? <><p className="font-mono text-3xl font-bold text-primary">{project.totalEpisodes}화</p><p className="mt-2 text-xs text-muted-foreground">총 연재 회차</p></> : <><Gauge value={scheduleResult.successRate} size="md" colorize label="마감 가능성 참고값" /><p className="mt-1 text-center text-[11px] text-muted-foreground">현재 입력값을 이용한 수식 기반 추정</p></>}
         </Card>
 
         {/* Progress */}
@@ -100,12 +102,12 @@ export function DashboardTab() {
 
         {/* Risk */}
         <Card className="flex flex-col justify-center gap-3">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">가장 큰 일정 요인</div>
-          <div>
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{isCompleted ? "자료 안내" : "가장 큰 일정 요인"}</div>
+          {isCompleted ? <div><p className="text-sm font-semibold">완결 작품 레퍼런스</p><p className="mt-2 text-xs leading-5 text-muted-foreground">공개된 작품 정보를 만사모의 관리 구조에 맞춰 정리한 소개용 데이터입니다.</p></div> : <div>
             <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{scheduleResult.riskFactors[0]?.label}</span><Badge variant={scheduleResult.riskFactors[0]?.severity === "high" ? "danger" : scheduleResult.riskFactors[0]?.severity === "medium" ? "warning" : "success"}>{scheduleResult.riskFactors[0]?.severity === "high" ? "높음" : scheduleResult.riskFactors[0]?.severity === "medium" ? "보통" : "낮음"}</Badge></div>
             <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{scheduleResult.riskFactors[0]?.detail}</p>
-          </div>
-          <Link to={`/projects/${id}/schedule`} className="text-xs font-semibold text-primary hover:underline">계산 근거 확인하기 →</Link>
+          </div>}
+          <Link to={isCompleted ? `/projects/${id}/story` : `/projects/${id}/schedule`} className="text-xs font-semibold text-primary hover:underline">{isCompleted ? "구성 자료 보기 →" : "계산 근거 확인하기 →"}</Link>
         </Card>
       </div>
 
@@ -113,7 +115,7 @@ export function DashboardTab() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>프로젝트 정보</CardTitle>
+            <div><CardTitle>프로젝트 정보</CardTitle>{isCompleted && <p className="mt-1 text-[11px] text-muted-foreground">작업량 관련 값은 화면 시연을 위한 가정값입니다.</p>}</div>
           </CardHeader>
           <div className="grid grid-cols-2 gap-y-3 text-sm">
             {[

@@ -3,11 +3,62 @@ import type { ExportSummaryInput, StoryStructureInput, StoryStructureSuggestion 
 
 const wait = (ms = 900) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+export type CreativeChatArea = "story" | "character" | "world";
+
+export interface CreativeChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface CreativeChatRequest {
+  area: CreativeChatArea;
+  message: string;
+  history: CreativeChatMessage[];
+  context?: string;
+}
+
+const chatGuides: Record<CreativeChatArea, { questions: string[]; summaryTitle: string }> = {
+  story: {
+    questions: [
+      "주인공이 이 이야기에서 반드시 얻고 싶은 것은 무엇이고, 그것을 가장 강하게 막는 것은 무엇인가요?",
+      "주인공이 목표를 이루기 위해 포기하거나 감수해야 하는 대가는 무엇인가요?",
+    ],
+    summaryTitle: "스토리 논의 메모",
+  },
+  character: {
+    questions: [
+      "이 인물이 겉으로 원하는 것과 마음속으로 두려워하는 것을 각각 알려주세요.",
+      "평소의 성격과 위기 상황에서 드러나는 행동 사이에 어떤 차이를 만들고 싶나요?",
+    ],
+    summaryTitle: "캐릭터 논의 메모",
+  },
+  world: {
+    questions: [
+      "이 세계에서 모두가 당연하게 지키는 규칙 한 가지는 무엇인가요?",
+      "그 규칙을 어기면 누가 어떤 대가를 치르게 되나요?",
+    ],
+    summaryTitle: "세계관 논의 메모",
+  },
+};
+
 /**
  * 현재 함수들은 백엔드 연결 전 UI 검증용 mock입니다.
  * 실제 OpenAI API 키는 프론트가 아닌 FastAPI 백엔드에서만 관리해야 합니다.
  */
 export const aiApi = {
+  async chatCreativeAssistant(req: CreativeChatRequest): Promise<string> {
+    await wait(700);
+    const userMessages = [...req.history.filter((item) => item.role === "user").map((item) => item.content), req.message];
+    const guide = chatGuides[req.area];
+
+    if (userMessages.length <= guide.questions.length) {
+      return `좋아요. 말씀해주신 내용을 더 구체화해볼게요.\n\n${guide.questions[userMessages.length - 1]}`;
+    }
+
+    const notes = userMessages.slice(-3).map((item) => `• ${item}`).join("\n");
+    return `${guide.summaryTitle}\n${notes}\n\n이 내용을 바탕으로 작성 칸에 반영할 문장을 직접 골라 다듬어보세요. 더 확인하고 싶은 부분이 있으면 계속 질문해도 됩니다.`;
+  },
+
   async suggestStoryStructure(input: StoryStructureInput): Promise<StoryStructureSuggestion> {
     await wait();
     const subject = input.logline ? `「${input.logline}」를 중심으로` : "주인공의 핵심 욕망을 중심으로";
