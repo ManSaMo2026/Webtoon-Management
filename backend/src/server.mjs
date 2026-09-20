@@ -1,9 +1,11 @@
+import "dotenv/config";
 import { createServer } from "node:http";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { runAiTask } from "./openai.mjs";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(currentDir, "..", "data");
@@ -34,6 +36,9 @@ db.exec(`
 
 const PORT = Number(process.env.PORT || 4000);
 const allowedOrigins = new Set(["http://localhost:5173", "http://127.0.0.1:5173"]);
+const AI_REQUEST_LIMIT = 20;
+const AI_REQUEST_WINDOW_MS = 60 * 60 * 1000;
+const aiRequestLog = new Map();
 
 function json(res, status, body, origin) {
   const headers = {
@@ -104,6 +109,15 @@ function currentUser(req) {
   `).get(tokenHash, new Date().toISOString());
 }
 
+function consumeAiRequest(userId) {
+  const now = Date.now();
+  const recent = (aiRequestLog.get(userId) || []).filter((time) => now - time < AI_REQUEST_WINDOW_MS);
+  if (recent.length >= AI_REQUEST_LIMIT) return false;
+  recent.push(now);
+  aiRequestLog.set(userId, recent);
+  return true;
+}
+
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin || "";
   if (req.method === "OPTIONS") return json(res, 204, {}, origin);
@@ -166,10 +180,36 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { user: publicUser(updated) }, origin);
     }
 
+    if (req.method === "POST" && url.pathname.startsWith("/api/ai/")) {
+      const user = currentUser(req);
+      if (!user) return json(res, 401, { message: "로그인이 필요합니다." }, origin);
+
+      const taskByPath = {
+        "/api/ai/chat": "chat",
+        "/api/ai/story-structure": "story-structure",
+        "/api/ai/scene-guide": "scene-guide",
+        "/api/ai/character-conflicts": "character-conflicts",
+        "/api/ai/foreshadow-review": "foreshadow-review",
+        "/api/ai/world-setting": "world-setting",
+        "/api/ai/export-summary": "export-summary",
+      };
+      const task = taskByPath[url.pathname];
+      if (!task) return json(res, 404, { message: "요청한 AI 기능을 찾을 수 없습니다." }, origin);
+      if (!consumeAiRequest(user.id)) {
+        return json(res, 429, { message: "AI 요청 한도를 초과했습니다. 한 시간 뒤 다시 시도해주세요." }, origin);
+      }
+
+      const result = await runAiTask(task, await readBody(req));
+      return json(res, 200, result, origin);
+    }
+
     return json(res, 404, { message: "요청한 API를 찾을 수 없습니다." }, origin);
   } catch (error) {
-    console.error(error);
-    return json(res, 500, { message: error.message || "서버 오류가 발생했습니다." }, origin);
+    console.error(`[server] ${error?.message || "알 수 없는 오류"}`);
+    const status = Number(error.statusCode) || Number(error.status) || 500;
+    return json(res, status >= 400 && status < 600 ? status : 500, {
+      message: error.message || "서버 오류가 발생했습니다.",
+    }, origin);
   }
 });
 
