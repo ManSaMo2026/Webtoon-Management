@@ -3,7 +3,7 @@ node_modules/
 dist/
 build/
 
-# 환경변수
+# 환경변수 (api 키 입력 파일 업로드 안됨)
 .env
 .env.local
 
