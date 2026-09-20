@@ -1,21 +1,15 @@
 import { Link } from "react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, Clock3, Network, UserRound } from "lucide-react";
 import { PublicHeader, Brand } from "../components/layout/PublicHeader";
 import { useAuth } from "../contexts/AuthContext";
+import heroProductShowcaseImage from "../assets/landing/hero-product-showcase.png";
 import "../styles/hero-landing.css";
 
-const workInputs = [
-  ["회차당 컷 수", "60"],
-  ["채색 방식", "풀컬러"],
-  ["배경 복잡도", "보통"],
-  ["주당 작업 가능 시간", "22시간"],
-  ["어시스턴트", "없음"],
-];
-
 const features = [
-  { label: "계획", title: "회차 · 일정 관리", description: "연재 주기와 회차별 작업 상태를 기록하고, 다음 마감까지 남은 시간을 확인합니다." },
-  { label: "예측", title: "마감 리스크 예측", description: "컷 수와 작업 조건을 바탕으로 완료 가능성과 우선 조정할 위험 요인을 보여줍니다." },
-  { label: "검토", title: "설정 충돌 검사", description: "캐릭터 설정과 복선이 서로 어긋나는 지점을 찾아 작품 정보를 검토합니다." },
+  { icon: BookOpen, title: "작품 관리", description: "여러 작품의 연재 현황을 한눈에" },
+  { icon: UserRound, title: "캐릭터 설계", description: "AI와 대화하며 입체적인 캐릭터 구축" },
+  { icon: Network, title: "인물관계도", description: "캐릭터 관계를 시각적으로 연결" },
+  { icon: Clock3, title: "마감 진단", description: "작업 조건을 바탕으로 일정 위험 확인" },
 ];
 
 export function LandingPage() {
@@ -28,57 +22,35 @@ export function LandingPage() {
       <PublicHeader />
       <main id="main-content">
         <section id="about" className="identity-hero">
+          <div className="identity-hero-orb identity-hero-orb-one" aria-hidden="true" />
+          <div className="identity-hero-orb identity-hero-orb-two" aria-hidden="true" />
           <div className="identity-container hero-layout">
             <div className="identity-copy">
-              <p className="identity-overline">웹툰 연재 일정 · 설정 관리</p>
-              <h1>이번 화,<br />마감 지킬 수 있을까?</h1>
-              <p className="identity-subhead">컷 수, 채색 방식, 작업 가능 시간을 입력하면<br />이번 회차의 마감 가능성과 위험 요인을 계산합니다.</p>
+              <p className="identity-overline">웹툰 창작자를 위한 제작 관리 도구</p>
+              <h1>웹툰 기획부터<br />마감까지, <span>한곳에서</span></h1>
+              <p className="identity-subhead">작품과 캐릭터 설정을 정리하고, 인물관계를 설계하세요.<br />작업 조건을 입력하면 이번 화의 마감 가능성과 위험 요인도 확인할 수 있어요.</p>
               <div className="identity-actions">
-                <Link to={projectPath} className="identity-primary-action">{user ? "내 프로젝트 이어가기" : "무료로 프로젝트 만들기"}<ArrowRight size={17} aria-hidden="true" /></Link>
-                {!user && <Link to="/login" className="identity-secondary-action">이미 계정이 있다면 로그인</Link>}
+                <Link to={projectPath} className="identity-primary-action">{user ? "내 프로젝트 이어가기" : "무료로 프로젝트 만들기"}<ArrowRight size={19} aria-hidden="true" /></Link>
               </div>
-              <p className="identity-note">AI는 그림을 생성하지 않습니다. 기획과 일정 관리만 돕습니다.</p>
+              <p className="identity-note">그림을 대신 만드는 AI가 아니라, 창작 과정과 일정 관리를 돕습니다.</p>
             </div>
 
-            <div id="product-preview" className="product-preview" aria-label="입력한 작업 조건으로 마감 성공 확률과 위험 요인을 계산하는 예시 화면">
-              <div className="preview-toolbar">
-                <div><span className="preview-project">검은 태양의 후계자</span><span className="preview-episode">18화 마감 점검</span></div>
-                <span className="example-label">예시 데이터</span>
-              </div>
-              <div className="risk-calculator">
-                <section className="input-panel" aria-label="작업 조건 예시">
-                  <div className="panel-heading"><span className="panel-step">01</span><span className="panel-kicker">작업 조건</span></div>
-                  <dl>
-                    {workInputs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-                  </dl>
-                </section>
-                <section className="result-panel" aria-label="마감 위험 계산 결과 예시">
-                  <div className="panel-heading"><span className="panel-step">02</span><span className="panel-kicker">예측 결과</span></div>
-                  <div className="probability" aria-label="마감 성공 확률 64퍼센트 (예시)">64%</div>
-                  <p className="probability-label">마감 성공 확률</p>
-                  <div className="probability-track" aria-hidden="true"><span /></div>
-                  <div className="risk-list">
-                    <div><span>주당 가능 시간 부족</span><strong className="risk-high">높음</strong></div>
-                    <div><span>배경 작업 비중</span><strong className="risk-normal">보통</strong></div>
-                  </div>
-                  <p className="result-guidance">가능 시간을 먼저 조정하면 마감 위험을 줄일 수 있습니다.</p>
-                </section>
-              </div>
+            <div id="product-preview" className="product-showcase" aria-label="만사모 실제 서비스 화면 미리보기">
+              <img
+                className="product-showcase-image"
+                src={heroProductShowcaseImage}
+                alt="작품 연재 현황, AI 캐릭터 상담, 인물관계도, 마감 가능성 진단을 한눈에 보여주는 만사모 서비스 화면"
+              />
             </div>
           </div>
-        </section>
 
-        <section id="features" className="identity-features">
-          <div className="identity-container">
-            <p className="section-overline">하나의 프로젝트에서</p>
-            <h2>계획부터 마감 점검까지 이어서 관리합니다</h2>
-            <div className="feature-ledger">
-              {features.map(({ label, title, description }, index) => (
-                <article key={title} className="feature-ledger-row">
-                  <span aria-hidden="true">0{index + 1}</span><p className="feature-label">{label}</p><h3>{title}</h3><p className="feature-description">{description}</p>
-                </article>
-              ))}
-            </div>
+          <div id="features" className="identity-container identity-feature-strip" aria-label="만사모 핵심 기능">
+            {features.map(({ icon: Icon, title, description }) => (
+              <article key={title}>
+                <span className="identity-feature-icon"><Icon size={23} aria-hidden="true" /></span>
+                <div><h2>{title}</h2><p>{description}</p></div>
+              </article>
+            ))}
           </div>
         </section>
       </main>

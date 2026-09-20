@@ -20,10 +20,6 @@ export function PublicHeader() {
       <div className="identity-header-inner">
         <div className="identity-header-left">
           <Brand />
-          <nav className="identity-public-nav" aria-label="주요 메뉴">
-            <a href="/#about">서비스</a>
-            <a href="/#features">핵심 기능</a>
-          </nav>
         </div>
         <div className="identity-header-actions">
           {!user && <Link to="/login" className="identity-header-login">로그인</Link>}

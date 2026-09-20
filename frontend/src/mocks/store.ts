@@ -51,161 +51,182 @@ function validateForeshadowEpisodes(data: Pick<Foreshadow, "projectId" | "appear
 
 const SEED_PROJECTS: Project[] = [
   {
-    id: "p1",
-    title: "검은 태양의 후계자",
+    id: "showcase-starlight-post",
+    title: "별을 줍는 우체국",
     platform: "네이버웹툰",
-    tags: ["다크판타지", "성장물", "복수극"],
+    tags: ["힐링판타지", "미스터리", "성장물"],
     genre: "판타지",
-    totalEpisodes: 60,
+    totalEpisodes: 72,
     cadence: "주 1회",
-    weeklyHours: 40,
-    avgCuts: 50,
+    weeklyHours: 36,
+    avgCuts: 48,
     colorMode: "컬러",
     bgComplexity: "보통",
     hasAssistant: true,
-    logline: "황제의 사생아가 금지된 마법으로 제국을 구해야 하는 이야기",
-    conflict: "혈통과 신념 사이의 갈등",
-    currentEpisode: 18,
-    nextDeadline: new Date(Date.now() + 5 * 86400000).toISOString(),
-    successRate: 72,
-    riskLevel: "보통",
-    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "p2",
-    title: "편의점 아르바이트생",
-    platform: "카카오페이지",
-    tags: ["로맨스", "힐링물", "일상"],
-    genre: "로맨스",
-    totalEpisodes: 30,
-    cadence: "주 2회",
-    weeklyHours: 25,
-    avgCuts: 35,
-    colorMode: "컬러",
-    bgComplexity: "단순",
-    hasAssistant: false,
-    logline: "편의점 야간 알바 중 매일 밤 찾아오는 손님과의 로맨스",
-    conflict: "현실과 이상 사이",
-    currentEpisode: 8,
-    nextDeadline: new Date(Date.now() + 2 * 86400000).toISOString(),
-    successRate: 45,
-    riskLevel: "높음",
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+    logline: "배달되지 못한 마음이 별이 되는 도시에서, 견습 집배원 여름이 마지막 편지들의 주인을 찾아가는 이야기",
+    conflict: "타인의 미련을 해결할수록 자신의 잃어버린 기억이 사라지는 여름의 선택",
+    currentEpisode: 21,
+    nextDeadline: new Date(Date.now() + 6 * 86400000).toISOString(),
+    completionDate: new Date(Date.now() + 357 * 86400000).toISOString(),
+    successRate: 81,
+    riskLevel: "낮음",
+    status: "연재중",
+    createdAt: new Date(Date.now() - 150 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
   {
-    id: "demo-hungry-dinner",
-    title: "공복의 저녁식사",
-    platform: "네이버웹툰",
-    tags: ["요리", "학원", "성장", "레퍼런스"],
-    genre: "일상",
-    totalEpisodes: 220,
-    cadence: "주 1회",
-    weeklyHours: 30,
-    avgCuts: 50,
-    colorMode: "컬러",
-    bgComplexity: "보통",
+    id: "showcase-afterwork-ghost",
+    title: "퇴근 후 괴담수집부",
+    platform: "카카오페이지",
+    tags: ["오피스", "도시괴담", "팀플레이"],
+    genre: "스릴러",
+    totalEpisodes: 48,
+    cadence: "주 2회",
+    weeklyHours: 28,
+    avgCuts: 62,
+    colorMode: "한정컬러",
+    bgComplexity: "복잡",
     hasAssistant: false,
-    logline: "맛있는 음식을 좋아하는 복희가 만두와 저녁을 나누며 성장하는 학원 이야기",
-    conflict: "먹는 즐거움과 관계 속 갈등을 지나며 성장하는 청소년들",
-    currentEpisode: 220,
-    nextDeadline: "2019-06-14T00:00:00.000Z",
-    successRate: 100,
-    riskLevel: "낮음",
-    status: "완결",
-    createdAt: new Date().toISOString(),
+    logline: "야근을 피하려던 신입 사원이 사내 비밀 동아리에 들어가 매주 금요일 현실이 되는 도시괴담을 기록한다",
+    conflict: "괴담을 끝내려면 회사가 감춘 실종 사건을 밝혀야 하지만 진실에 가까워질수록 동료가 한 명씩 기억에서 사라진다",
+    currentEpisode: 13,
+    nextDeadline: new Date(Date.now() + 2 * 86400000).toISOString(),
+    completionDate: new Date(Date.now() + 168 * 86400000).toISOString(),
+    successRate: 47,
+    riskLevel: "높음",
+    status: "연재중",
+    createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
 
 const SEED_EPISODES: Episode[] = [
-  { id: "e1", projectId: "p1", number: 1, summary: "주인공의 탄생과 비밀", purpose: "설정", hook: "황제의 문서가 발견된다" },
-  { id: "e2", projectId: "p1", number: 2, summary: "금지된 마법의 각성", purpose: "전개", hook: "스승이 죽는다" },
-  { id: "e3", projectId: "p1", number: 3, summary: "첫 번째 적과의 조우", purpose: "전개", hook: "적이 사실은 동생임이 암시된다" },
+  { id: "showcase-star-e20", projectId: "showcase-starlight-post", number: 20, summary: "수신인이 없는 푸른 편지가 여름의 어린 시절 집으로 향한다.", purpose: "반전", hook: "편지 끝에 여름의 필체로 쓴 추신이 발견된다" },
+  { id: "showcase-star-e21", projectId: "showcase-starlight-post", number: 21, summary: "여름과 도윤이 폐쇄된 별빛 우편실에서 발송 기록을 추적한다.", purpose: "전개", hook: "기록 속 배달 완료 시각이 내일로 적혀 있다" },
+  { id: "showcase-ghost-e12", projectId: "showcase-afterwork-ghost", number: 12, summary: "팀원들은 아무도 기억하지 못하는 14층 회의실에 잠입한다.", purpose: "전개", hook: "회의록 참석자 명단에서 현재 팀장의 이름이 지워진다" },
+  { id: "showcase-ghost-e13", projectId: "showcase-afterwork-ghost", number: 13, summary: "서진은 사내 메신저에만 존재하는 퇴사자와 대화를 시작한다.", purpose: "클라이맥스", hook: "퇴사자가 오늘 자정 서진의 계정으로 로그인하겠다고 예고한다" },
 ];
 
 const SEED_FORESHADOWS: Foreshadow[] = [
-  { id: "f1", projectId: "p1", content: "황제의 반지에 새겨진 룬 문자", keyword: "황제의 반지", importance: "high", relatedCharacterIds: ["c1"], appearEp: 1, resolveEp: null, status: "미회수" },
-  { id: "f2", projectId: "p1", content: "스승의 마지막 말 '네 어머니를 찾아라'", keyword: "어머니의 행방", importance: "medium", relatedCharacterIds: ["c1"], appearEp: 2, resolveEp: 15, status: "회수완료" },
-  { id: "f3", projectId: "p1", content: "붉은 달이 뜨는 날의 예언", keyword: "붉은 달", importance: "high", relatedCharacterIds: ["c1", "c2"], appearEp: 1, resolveEp: null, status: "미회수" },
+  { id: "showcase-star-f1", projectId: "showcase-starlight-post", content: "여름이 만지는 편지만 별빛이 잠시 검게 변한다", keyword: "검은 별빛", importance: "high", relatedCharacterIds: ["showcase-star-yeoreum"], appearEp: 2, resolveEp: 36, status: "진행중" },
+  { id: "showcase-star-f2", projectId: "showcase-starlight-post", content: "도윤이 매번 같은 날짜의 우편 소인을 숨긴다", keyword: "멈춘 소인", importance: "medium", relatedCharacterIds: ["showcase-star-doyun"], appearEp: 7, resolveEp: 28, status: "진행중" },
+  { id: "showcase-ghost-f1", projectId: "showcase-afterwork-ghost", content: "엘리베이터 층수 표시에서 매주 금요일 14층이 사라진다", keyword: "없는 14층", importance: "high", relatedCharacterIds: ["showcase-ghost-seojin", "showcase-ghost-hyun"], appearEp: 1, resolveEp: 24, status: "진행중" },
+  { id: "showcase-ghost-f2", projectId: "showcase-afterwork-ghost", content: "팀장이 오래된 단체 사진마다 다른 위치에 서 있다", keyword: "움직이는 사진", importance: "high", relatedCharacterIds: ["showcase-ghost-hyun"], appearEp: 4, resolveEp: null, status: "미회수" },
 ];
 
 const SEED_CHARACTERS: Character[] = [
   {
-    id: "c1", projectId: "p1", name: "카이 레온", role: "주인공", roleGroup: "주연",
-    personality: "냉정하고 계산적이지만 내면엔 정의감",
-    goal: "황제를 타도하고 왕국을 구한다",
-    speechStyle: "짧고 단호하게 말함",
-    taboo: "자신의 출생에 대해 말하지 않음",
-    secret: "사실 황제의 아들",
-    keywords: ["냉혹", "정의", "고독"],
+    id: "showcase-star-yeoreum", projectId: "showcase-starlight-post", name: "한여름", role: "견습 별빛 집배원", roleGroup: "주연",
+    personality: "다정하고 끈질기지만 자신의 슬픔은 농담으로 넘긴다",
+    goal: "배달되지 못한 마지막 편지를 모두 주인에게 전한다",
+    speechStyle: "상대의 말을 먼저 되묻고 부드럽게 확신을 건넨다",
+    taboo: "어린 시절과 가족에 관한 질문을 피한다",
+    secret: "우체국에 보관된 첫 번째 미배달 편지의 발신인이다",
+    keywords: ["다정함", "기억", "책임감"],
+    age: "22세", occupation: "별빛 우체국 견습 집배원", likes: "새벽 산책, 오래된 우표", dislikes: "작별 인사",
   },
   {
-    id: "c2", projectId: "p1", name: "루나 실버", role: "히로인", roleGroup: "주연",
-    personality: "밝고 긍정적, 하지만 슬픔을 숨김",
-    goal: "실종된 오빠를 찾는다",
-    speechStyle: "친근하고 따뜻하게 말함",
-    taboo: "오빠 이야기에 예민하게 반응",
-    secret: "마법 능력이 있음을 숨기고 있음",
-    keywords: ["따뜻함", "희망", "비밀"],
+    id: "showcase-star-doyun", projectId: "showcase-starlight-post", name: "서도윤", role: "기록실 담당자", roleGroup: "주연",
+    personality: "정확하고 무뚝뚝하지만 타인의 기억을 세심하게 기록한다",
+    goal: "우체국이 숨긴 미배달 사고의 진실을 밝힌다",
+    speechStyle: "짧은 존댓말과 날짜를 정확히 말하는 습관이 있다",
+    taboo: "자신이 배달에 실패한 편지 이야기를 거부한다",
+    secret: "여름의 잃어버린 기억 일부를 대신 보관하고 있다",
+    keywords: ["기록", "죄책감", "신뢰"],
+    age: "27세", occupation: "별빛 우체국 기록실 담당자", likes: "정리된 서가, 비 오는 날", dislikes: "기한이 지워진 우편물",
   },
   {
-    id: "demo-bokhui", projectId: "demo-hungry-dinner", name: "공복희", role: "주인공", roleGroup: "주연",
-    personality: "맛있는 음식을 좋아하고 사람들과 식사하며 관계를 넓혀가는 고등학생",
-    goal: "새로운 학교생활과 관계 속에서 자신만의 방식으로 성장한다",
-    speechStyle: "", taboo: "", secret: "", keywords: ["식탐", "성장", "학원생활"],
+    id: "showcase-star-madam", projectId: "showcase-starlight-post", name: "마담 소라", role: "우체국장", roleGroup: "조연",
+    personality: "태연하고 유머러스하지만 우체국의 규칙에는 단호하다",
+    goal: "별이 된 마음이 도시를 집어삼키기 전에 미련을 정리한다",
+    speechStyle: "수수께끼 같은 비유 뒤에 현실적인 조언을 덧붙인다",
+    taboo: "첫 번째 집배원의 이름을 입에 올리지 않는다",
+    secret: "도시가 생긴 날부터 늙지 않고 우체국을 지켰다",
+    keywords: ["안내자", "비밀", "오래된 약속"],
   },
   {
-    id: "demo-mandu", projectId: "demo-hungry-dinner", name: "손민주(만두)", role: "친구·요리 담당", roleGroup: "주연",
-    personality: "요리와 만화를 좋아하며 자신의 방식이 뚜렷한 인물",
-    goal: "친구들과 맛있는 식사를 나누며 관계를 이어간다",
-    speechStyle: "", taboo: "", secret: "", keywords: ["요리", "친구", "마이페이스"],
+    id: "showcase-ghost-seojin", projectId: "showcase-afterwork-ghost", name: "윤서진", role: "신입 사원", roleGroup: "주연",
+    personality: "눈치가 빠르고 현실적이지만 부당한 일을 지나치지 못한다",
+    goal: "사라진 동료들의 기록을 되찾고 괴담수집부를 해체한다",
+    speechStyle: "혼잣말이 많고 위기일수록 업무 용어로 상황을 정리한다",
+    taboo: "누군가를 기억하지 못한다는 사실을 인정하기 두려워한다",
+    secret: "입사 전 이미 회사 괴담을 한 번 겪었지만 기억이 조작됐다",
+    keywords: ["현실주의", "관찰력", "기억"],
+    age: "26세", occupation: "대성물산 브랜드팀 신입", likes: "정시 퇴근, 캔커피", dislikes: "읽음 표시 없는 메신저",
   },
   {
-    id: "demo-jinsu", projectId: "demo-hungry-dinner", name: "김진수", role: "친구", roleGroup: "주연",
-    personality: "복희와 만두의 식사와 학교생활에 함께하는 친구",
-    goal: "친구들과의 관계 속에서 자신의 마음과 갈등을 마주한다",
-    speechStyle: "", taboo: "", secret: "", keywords: ["친구", "학원", "관계"],
+    id: "showcase-ghost-hyun", projectId: "showcase-afterwork-ghost", name: "강태현", role: "괴담수집부 팀장", roleGroup: "주연",
+    personality: "침착하고 친절하지만 모든 상황을 이미 예상한 듯 행동한다",
+    goal: "실종 사건이 반복되는 금요일을 끝낸다",
+    speechStyle: "업무 지시처럼 간결하며 위험한 순간에도 존댓말을 쓴다",
+    taboo: "자신의 입사 연도와 가족 이야기를 밝히지 않는다",
+    secret: "사내 기록상 12년 전에 실종 처리된 직원이다",
+    keywords: ["미스터리", "보호자", "실종자"],
+    occupation: "괴담수집부 팀장", likes: "종이 문서, 계단", dislikes: "사원증 사진 촬영",
+  },
+  {
+    id: "showcase-ghost-mira", projectId: "showcase-afterwork-ghost", name: "오미라", role: "정보 수집 담당", roleGroup: "조연",
+    personality: "대담하고 사교적이며 공포를 농담으로 견딘다",
+    goal: "괴담 속에서 사라진 언니의 흔적을 찾는다",
+    speechStyle: "인터넷 은어와 사내 소문을 섞어 빠르게 말한다",
+    taboo: "언니가 자진 퇴사했다는 회사의 설명을 믿지 않는다",
+    secret: "괴담 게시판의 익명 운영자다",
+    keywords: ["정보력", "유머", "집념"],
+    age: "29세", occupation: "인사팀 대리", likes: "익명 게시판, 매운 과자", dislikes: "삭제된 인사 기록",
   },
 ];
 
 const SEED_ACTS: Act[] = [
   {
-    projectId: "p1",
-    act1: "1-15화: 카이가 자신의 출생을 알게 되고, 금지된 마법을 각성한다. 왕국의 부패를 목격하며 저항군에 합류를 결심한다.",
-    act2: "16-40화: 저항군과 함께 황제의 비밀 기지를 파괴하며 세력을 키운다. 루나와의 관계가 깊어지지만 진실이 밝혀지면서 갈등이 시작된다.",
-    act3: "41-60화: 황제가 최종 계획을 발동한다. 카이는 자신의 혈통을 받아들이고 진정한 왕으로서 최후의 결전을 치른다.",
+    projectId: "showcase-starlight-post",
+    act1: "1~18화: 한여름이 별빛 우체국의 견습 집배원이 되어 미배달 편지를 전한다. 편지가 해결될 때마다 자신의 어린 시절 기억이 흐려진다는 사실을 깨닫는다.",
+    act2: "19~52화: 여름과 도윤은 우체국이 특정 편지들을 의도적으로 숨겼다는 증거를 찾는다. 잃어버린 기억과 도시의 탄생이 연결되며 두 사람의 신뢰가 흔들린다.",
+    act3: "53~72화: 도시를 지탱해온 첫 번째 편지의 수신인이 밝혀진다. 여름은 모든 기억을 되찾는 것과 도시 사람들의 미련을 보내주는 것 사이에서 마지막 배달을 선택한다.",
   },
   {
-    projectId: "demo-hungry-dinner",
-    act1: "소개용 요약: 복희가 학교생활을 시작하고 만두와 저녁을 함께 먹으며 새로운 관계를 만들어간다.",
-    act2: "소개용 요약: 음식과 식사 자리를 중심으로 친구들의 관계와 각자의 고민이 구체화된다.",
-    act3: "소개용 요약: 여러 갈등을 지나며 복희와 친구들이 서로를 이해하고 성장해간다.",
+    projectId: "showcase-afterwork-ghost",
+    act1: "1~12화: 윤서진이 괴담수집부에 들어가 금요일마다 현실이 되는 사내 괴담을 기록한다. 팀원들은 14층 회의실과 실종된 직원 명단의 연관성을 발견한다.",
+    act2: "13~34화: 괴담이 회사 밖으로 번지고, 동료들이 사람들의 기억에서 사라지기 시작한다. 서진은 팀장 태현이 오래전 실종자라는 증거와 자신의 조작된 기억을 마주한다.",
+    act3: "35~48화: 회사가 괴담을 이용해 사고와 실종을 은폐해왔다는 진실이 드러난다. 수집부는 모든 기록을 공개하는 대신 자신들이 완전히 지워질 위험을 감수한다.",
   },
 ];
 
 const SEED_WORLD_SETTINGS: WorldSetting[] = [
   {
-    id: "world-demo-hungry-dinner",
-    projectId: "demo-hungry-dinner",
-    era: "2010년대 대한민국 현대",
-    mainPlaces: "고등학교, 친구들이 함께 식사하는 집과 식탁, 동네 생활 공간",
-    worldRules: "현실적인 학교생활을 바탕으로 음식과 식사 장면이 인물 관계를 이어주는 중심 장치로 작동한다.",
-    organizations: "학교와 학급, 가족과 친구 관계",
-    culture: "학업과 친구 관계를 함께 겪는 10대 청소년의 일상",
-    technologyOrMagic: "현실 기반 작품으로 별도의 마법이나 초능력 체계가 없다.",
-    moodTone: "음식의 즐거움과 청소년 관계의 갈등이 함께 있는 학원 성장물",
-    forbiddenSettings: "공식 작품에 확인되지 않은 설정은 사실처럼 추가하지 않는다.",
-    researchNotes: "작품의 기본 정보와 공개 소개를 바탕으로 만든 팀 발표용 레퍼런스 프로젝트. 작업 시간, 평균 컷 수 등 제작 데이터는 공개 정보가 아니므로 화면 시연용 가정값을 사용한다.",
-    referenceSources: "네이버 시리즈 《공복의 저녁식사》 https://series.naver.com/comic/detail.series?productNo=2201775\nMBN 인터뷰·기사 https://www.mbn.co.kr/pages/news/newsPrintView.php?news_seq_no=2488558",
+    id: "world-showcase-starlight-post",
+    projectId: "showcase-starlight-post",
+    era: "현대와 닮았지만 밤이 길고 별빛이 가까운 가상 도시",
+    mainPlaces: "언덕 끝 별빛 우체국, 미배달 편지 기록실, 새벽 시장, 빛이 꺼진 구시가지",
+    worldRules: "끝내 전하지 못한 마음은 별이 되어 우체국에 떨어진다. 편지는 수신인에게 직접 전달되어야만 별빛으로 돌아간다.",
+    organizations: "별빛 우체국, 시청 야간관리과, 기억을 거래하는 새벽 상인회",
+    culture: "중요한 작별은 손편지로 남기며, 별이 많이 떨어지는 밤에는 집 밖에 나가지 않는 풍습이 있다.",
+    technologyOrMagic: "집배원은 우표에 남은 감정을 읽을 수 있지만 배달할 때마다 자신의 기억 하나가 흐려진다.",
+    moodTone: "따뜻한 일상과 잔잔한 미스터리가 교차하는 밤의 힐링 판타지",
+    forbiddenSettings: "편지가 죽은 사람을 직접 되살리지는 않는다. 잃은 기억은 대가 없이 복구할 수 없다.",
+    researchNotes: "우편 분류 과정, 오래된 우체국 건축, 야간 도시 조명을 배경 자료로 조사한다.",
+    referenceSources: "가상 작품 촬영용 설정 자료",
+  },
+  {
+    id: "world-showcase-afterwork-ghost",
+    projectId: "showcase-afterwork-ghost",
+    era: "현재의 서울과 유사한 대기업 밀집 업무 지구",
+    mainPlaces: "대성물산 본사, 존재하지 않는 14층, 지하 문서고, 막차 이후의 지하철역",
+    worldRules: "사내에서 세 번 이상 같은 괴담이 공유되면 다음 금요일 자정에 현실이 된다. 기록에서 지워진 사람은 주변의 기억에서도 사라진다.",
+    organizations: "대성물산, 비공식 괴담수집부, 실종 기록을 관리하는 보안감사실",
+    culture: "야근과 사내 메신저, 익명 게시판의 소문이 괴담을 빠르게 증폭한다.",
+    technologyOrMagic: "삭제된 전자 기록은 자정 이후 잠시 복원되며, 오래된 종이 문서는 기억 삭제의 영향을 받지 않는다.",
+    moodTone: "익숙한 사무실의 불편함이 공포로 변하는 오피스 미스터리 스릴러",
+    forbiddenSettings: "괴담은 이유 없이 사람을 공격하지 않으며 반드시 회사가 숨긴 사건이나 기록과 연결된다.",
+    researchNotes: "대기업 사무실 동선, 전산 기록 보존, 야간 보안 절차를 장면 설계에 활용한다.",
+    referenceSources: "가상 작품 촬영용 설정 자료",
   },
 ];
 
 const SEED_TODOS: Todo[] = [
-  { id: "t1", projectId: "p1", content: "18화 콘티 완성", done: false },
-  { id: "t2", projectId: "p1", content: "17화 배경 채색 검수", done: true },
-  { id: "t3", projectId: "p1", content: "복선 회수 계획표 업데이트", done: false },
+  { id: "showcase-star-t1", projectId: "showcase-starlight-post", content: "22화 우편실 배경 스케치", done: true },
+  { id: "showcase-star-t2", projectId: "showcase-starlight-post", content: "검은 별빛 복선 대사 점검", done: false },
+  { id: "showcase-ghost-t1", projectId: "showcase-afterwork-ghost", content: "14화 콘티 62컷 정리", done: false },
+  { id: "showcase-ghost-t2", projectId: "showcase-afterwork-ghost", content: "사내 메신저 화면 식자", done: false },
 ];
 
 function initSeed() {
@@ -225,37 +246,62 @@ function initSeed() {
 
 initSeed();
 
-// Backfill only the bundled demo projects that may already exist in localStorage.
-const projectsForPlatformMigration = load<Project>(KEYS.projects);
-const migratedProjects = projectsForPlatformMigration.map((project) => {
-  if (project.id === "p1" && project.title === "검은 태양의 후계자") return { ...project, platform: project.platform || "네이버웹툰", tags: project.tags?.length ? project.tags : ["다크판타지", "성장물", "복수극"] };
-  if (project.id === "p2" && project.title === "편의점 아르바이트생") return { ...project, platform: project.platform || "카카오페이지", tags: project.tags?.length ? project.tags : ["로맨스", "힐링물", "일상"] };
-  return project;
-});
-if (JSON.stringify(migratedProjects) !== JSON.stringify(projectsForPlatformMigration)) {
-  save(KEYS.projects, migratedProjects);
+// 이전 버전에 포함됐던 샘플 3개와 연결 데이터를 기존 브라우저에서도 한 번만 정리합니다.
+const LEGACY_SEED_CLEANUP_KEY = "wt_legacy_seed_projects_removed_v1";
+const LEGACY_SEED_PROJECT_IDS = new Set(["p1", "p2", "demo-hungry-dinner"]);
+if (!localStorage.getItem(LEGACY_SEED_CLEANUP_KEY)) {
+  save(KEYS.projects, load<Project>(KEYS.projects).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.id)));
+  save(KEYS.episodes, load<Episode>(KEYS.episodes).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.foreshadows, load<Foreshadow>(KEYS.foreshadows).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.characters, load<Character>(KEYS.characters).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.acts, load<Act>(KEYS.acts).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.todos, load<Todo>(KEYS.todos).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.timelineItems, load<TimelineItem>(KEYS.timelineItems).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.relationshipBoards, load<RelationshipBoard>(KEYS.relationshipBoards).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  save(KEYS.worldSettings, load<WorldSetting>(KEYS.worldSettings).filter((item) => !LEGACY_SEED_PROJECT_IDS.has(item.projectId)));
+  localStorage.removeItem("wt_demo_hungry_dinner_seeded");
+  localStorage.setItem(LEGACY_SEED_CLEANUP_KEY, "1");
 }
 
-// 기존 브라우저에도 팀 발표용 레퍼런스 프로젝트를 한 번만 추가합니다.
-const HUNGRY_DINNER_SEED_KEY = "wt_demo_hungry_dinner_seeded";
-if (!localStorage.getItem(HUNGRY_DINNER_SEED_KEY)) {
-  const demoProject = SEED_PROJECTS.find((project) => project.id === "demo-hungry-dinner")!;
+// 기존 브라우저에도 메인 화면 촬영용 가상 작품 2개를 추가합니다.
+const SHOWCASE_SEED_KEY = "wt_showcase_projects_seeded_v1";
+const SHOWCASE_PROJECT_IDS = ["showcase-starlight-post", "showcase-afterwork-ghost"];
+if (!localStorage.getItem(SHOWCASE_SEED_KEY)) {
   const currentProjects = load<Project>(KEYS.projects);
-  if (!currentProjects.some((project) => project.id === demoProject.id || project.title === demoProject.title)) save(KEYS.projects, [...currentProjects, demoProject]);
+  const showcaseProjects = SEED_PROJECTS.filter((project) => SHOWCASE_PROJECT_IDS.includes(project.id));
+  const availableSlots = Math.max(0, MAX_PROJECTS - currentProjects.length);
+  const projectsToAdd = showcaseProjects
+    .filter((project) => !currentProjects.some((item) => item.id === project.id))
+    .slice(0, availableSlots);
+  const nextProjects = [...currentProjects, ...projectsToAdd];
+  if (projectsToAdd.length) save(KEYS.projects, nextProjects);
 
-  const demoCharacters = SEED_CHARACTERS.filter((character) => character.projectId === demoProject.id);
-  const currentCharacters = load<Character>(KEYS.characters);
-  save(KEYS.characters, [...currentCharacters, ...demoCharacters.filter((character) => !currentCharacters.some((item) => item.id === character.id))]);
+  const activeProjectIds = new Set(
+    SHOWCASE_PROJECT_IDS.filter((projectId) => nextProjects.some((project) => project.id === projectId)),
+  );
 
-  const demoAct = SEED_ACTS.find((act) => act.projectId === demoProject.id)!;
+  const mergeSeedById = <T extends { id: string }>(key: string, seeds: T[]) => {
+    const current = load<T>(key);
+    const additions = seeds.filter((seed) => !current.some((item) => item.id === seed.id));
+    if (additions.length) save(key, [...current, ...additions]);
+  };
+
+  mergeSeedById(KEYS.episodes, SEED_EPISODES.filter((item) => activeProjectIds.has(item.projectId)));
+  mergeSeedById(KEYS.foreshadows, SEED_FORESHADOWS.filter((item) => activeProjectIds.has(item.projectId)));
+  mergeSeedById(KEYS.characters, SEED_CHARACTERS.filter((item) => activeProjectIds.has(item.projectId)));
+  mergeSeedById(KEYS.todos, SEED_TODOS.filter((item) => activeProjectIds.has(item.projectId)));
+
   const currentActs = load<Act>(KEYS.acts);
-  if (!currentActs.some((act) => act.projectId === demoProject.id)) save(KEYS.acts, [...currentActs, demoAct]);
+  const actsToAdd = SEED_ACTS.filter((item) => activeProjectIds.has(item.projectId) && !currentActs.some((act) => act.projectId === item.projectId));
+  if (actsToAdd.length) save(KEYS.acts, [...currentActs, ...actsToAdd]);
 
-  const demoWorld = SEED_WORLD_SETTINGS.find((setting) => setting.projectId === demoProject.id)!;
   const currentWorldSettings = load<WorldSetting>(KEYS.worldSettings);
-  if (!currentWorldSettings.some((setting) => setting.projectId === demoProject.id)) save(KEYS.worldSettings, [...currentWorldSettings, demoWorld]);
+  const worldsToAdd = SEED_WORLD_SETTINGS.filter((item) => activeProjectIds.has(item.projectId) && !currentWorldSettings.some((world) => world.projectId === item.projectId));
+  if (worldsToAdd.length) save(KEYS.worldSettings, [...currentWorldSettings, ...worldsToAdd]);
 
-  localStorage.setItem(HUNGRY_DINNER_SEED_KEY, "1");
+  if (SHOWCASE_PROJECT_IDS.every((projectId) => activeProjectIds.has(projectId))) {
+    localStorage.setItem(SHOWCASE_SEED_KEY, "1");
+  }
 }
 
 const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));

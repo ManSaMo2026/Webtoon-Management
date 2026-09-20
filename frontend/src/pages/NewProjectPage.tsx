@@ -142,7 +142,7 @@ export function NewProjectPage() {
             </div>
 
             <div className="space-y-5">
-              <Input label="작품 제목" required value={form.title} onChange={(event) => set({ title: event.target.value })} placeholder="예: 검은 태양의 후계자" autoFocus />
+              <Input label="작품 제목" required value={form.title} onChange={(event) => set({ title: event.target.value })} placeholder="예: 나의 첫 번째 웹툰" autoFocus />
               <div>
                 <p className="mb-1.5 text-sm font-medium text-foreground">작품 표지 <span className="font-normal text-muted-foreground">선택</span></p>
                 <div className="flex items-center gap-4 rounded-lg border border-border bg-input-background p-3.5">
