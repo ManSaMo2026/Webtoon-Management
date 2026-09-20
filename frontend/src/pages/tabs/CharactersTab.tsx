@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, Plus, ShieldAlert, Trash2, X } from "lucide-react";
+import { ImagePlus, LayoutGrid, Network, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { charactersApi } from "../../api/characters";
 import { Badge } from "../../components/ui/Badge";
@@ -11,7 +11,9 @@ import { Input, Select, Textarea } from "../../components/ui/FormField";
 import { ConfirmModal, Modal } from "../../components/ui/Modal";
 import { EmptyState, SkeletonList } from "../../components/ui/Skeleton";
 import { CreativeChat } from "../../components/ai/CreativeChat";
+import { RelationshipBoard } from "../../components/characters/RelationshipBoard";
 import type { Character, CharacterRoleGroup } from "../../types";
+import { MAX_CHARACTERS_PER_PROJECT } from "../../config/limits";
 
 const ROLE_GROUPS: CharacterRoleGroup[] = ["주연", "조연", "기타"];
 
@@ -54,7 +56,7 @@ function CharacterModal({ open, onClose, projectId, character }: { open: boolean
   const mutation = useMutation({
     mutationFn: () => character ? charactersApi.update(character.id, form) : charactersApi.create(form),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["characters", projectId] }); toast.success(character ? "캐릭터가 수정되었습니다." : "캐릭터가 추가되었습니다."); onClose(); },
-    onError: () => toast.error("캐릭터를 저장하지 못했습니다."),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "캐릭터를 저장하지 못했습니다."),
   });
 
   const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -144,27 +146,48 @@ export function CharactersTab() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [conflicts, setConflicts] = useState<string[] | null>(null);
   const [checkLoading, setCheckLoading] = useState(false);
+  const [view, setView] = useState<"list" | "relationships">("list");
   const { data: characters, isLoading } = useQuery({ queryKey: ["characters", projectId], queryFn: () => charactersApi.list(projectId!), enabled: !!projectId });
   const deleteMutation = useMutation({ mutationFn: charactersApi.delete, onSuccess: () => { qc.invalidateQueries({ queryKey: ["characters", projectId] }); toast.success("캐릭터가 삭제되었습니다."); setDeleteId(null); } });
   const checkConflicts = async () => { setCheckLoading(true); try { setConflicts(await charactersApi.checkConflicts(projectId!)); } finally { setCheckLoading(false); } };
-  const openCreate = () => { setEditChar(undefined); setModalOpen(true); };
+  const characterLimitReached = (characters?.length ?? 0) >= MAX_CHARACTERS_PER_PROJECT;
+  const openCreate = () => {
+    if (characterLimitReached) return toast.error(`프로젝트당 캐릭터는 최대 ${MAX_CHARACTERS_PER_PROJECT}명까지 등록할 수 있습니다.`);
+    setEditChar(undefined);
+    setModalOpen(true);
+  };
 
-  return <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-    <div className="min-w-0 space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-foreground">캐릭터 <span className="text-muted-foreground font-normal ml-1">{characters?.length ?? 0}명</span></h2><div className="flex gap-2"><Button size="sm" variant="outline" loading={checkLoading} onClick={checkConflicts}><ShieldAlert size={14} />설정 충돌 체크</Button><Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button></div></div>
-      {conflicts !== null && <Card className="border-amber-200 bg-amber-50"><div className="flex items-start gap-2"><ShieldAlert size={16} className="text-amber-600 mt-0.5 shrink-0" /><div className="flex-1"><p className="text-sm font-semibold text-amber-800 mb-2">설정 충돌 점검 결과</p>{conflicts.length === 0 ? <p className="text-sm text-amber-700">현재 입력된 설정에서 확인할 충돌이 없습니다.</p> : <ul className="space-y-1">{conflicts.map((item) => <li key={item} className="text-sm text-amber-700">• {item}</li>)}</ul>}</div><button type="button" aria-label="점검 결과 닫기" onClick={() => setConflicts(null)} className="text-amber-500 hover:text-amber-700"><X size={14} /></button></div></Card>}
-      {isLoading ? <SkeletonList count={3} /> : !characters?.length ? <EmptyState title="등록된 캐릭터가 없습니다" description="첫 번째 캐릭터를 추가하고 주연·조연·기타 그룹으로 관리해보세요" action={<Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button>} /> : <div className="space-y-5">
-        {ROLE_GROUPS.map((group) => {
-          const groupCharacters = characters.filter((character) => getRoleGroup(character) === group);
-          return <section key={group} aria-labelledby={`character-group-${group}`} className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-3 flex items-center justify-between border-b border-border pb-3"><div><h3 id={`character-group-${group}`} className="text-sm font-semibold text-foreground">{group}</h3><p className="mt-0.5 text-xs text-muted-foreground">{group === "주연" ? "이야기의 중심 갈등과 변화를 이끄는 인물" : group === "조연" ? "주연의 선택과 사건 전개에 영향을 주는 인물" : "단역, 엑스트라, 분류 전 인물"}</p></div><span className="font-mono text-xs font-semibold text-primary">{groupCharacters.length}명</span></div>
-            {groupCharacters.length ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{groupCharacters.map((char) => <CharacterCard key={char.id} char={char} onEdit={() => { setEditChar(char); setModalOpen(true); }} onDelete={() => setDeleteId(char.id)} />)}</div> : <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">이 그룹에 등록된 캐릭터가 없습니다.</p>}
-          </section>;
-        })}
-      </div>}
-      <CharacterModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId!} character={editChar} />
-      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMutation.mutate(deleteId)} title="캐릭터 삭제" message="이 캐릭터를 삭제하시겠습니까?" loading={deleteMutation.isPending} />
+  return <div className="space-y-5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="inline-flex w-fit rounded-lg border border-border bg-white p-1" role="tablist" aria-label="캐릭터 화면 전환">
+        <button type="button" role="tab" aria-selected={view === "list"} onClick={() => setView("list")} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${view === "list" ? "bg-primary text-white" : "text-text-muted hover:bg-muted hover:text-text"}`}><LayoutGrid size={14} />캐릭터 목록</button>
+        <button type="button" role="tab" aria-selected={view === "relationships"} onClick={() => setView("relationships")} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${view === "relationships" ? "bg-primary text-white" : "text-text-muted hover:bg-muted hover:text-text"}`}><Network size={15} />인물관계도</button>
+      </div>
+      <p className="text-xs text-text-muted">등록된 캐릭터 {characters?.length ?? 0}/{MAX_CHARACTERS_PER_PROJECT}명</p>
     </div>
-    <CreativeChat area="character" context={`현재 등록된 캐릭터 ${characters?.length ?? 0}명`} />
+
+    {view === "relationships" ? (
+      <RelationshipBoard projectId={projectId!} characters={characters ?? []} onCreateCharacter={openCreate} />
+    ) : (
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-foreground">캐릭터 <span className="text-muted-foreground font-normal ml-1">{characters?.length ?? 0}/{MAX_CHARACTERS_PER_PROJECT}명</span></h2><div className="flex gap-2"><Button size="sm" variant="outline" loading={checkLoading} onClick={checkConflicts}><ShieldAlert size={14} />설정 충돌 체크</Button><Button size="sm" onClick={openCreate} disabled={characterLimitReached} title={characterLimitReached ? `최대 ${MAX_CHARACTERS_PER_PROJECT}명까지 등록할 수 있습니다.` : undefined}><Plus size={14} />캐릭터 추가</Button></div></div>
+          {conflicts !== null && <Card className="border-amber-200 bg-amber-50"><div className="flex items-start gap-2"><ShieldAlert size={16} className="text-amber-600 mt-0.5 shrink-0" /><div className="flex-1"><p className="text-sm font-semibold text-amber-800 mb-2">설정 충돌 점검 결과</p>{conflicts.length === 0 ? <p className="text-sm text-amber-700">현재 입력된 설정에서 확인할 충돌이 없습니다.</p> : <ul className="space-y-1">{conflicts.map((item) => <li key={item} className="text-sm text-amber-700">• {item}</li>)}</ul>}</div><button type="button" aria-label="점검 결과 닫기" onClick={() => setConflicts(null)} className="text-amber-500 hover:text-amber-700"><X size={14} /></button></div></Card>}
+          {isLoading ? <SkeletonList count={3} /> : !characters?.length ? <EmptyState title="등록된 캐릭터가 없습니다" description="첫 번째 캐릭터를 추가하고 주연·조연·기타 그룹으로 관리해보세요" action={<Button size="sm" onClick={openCreate}><Plus size={14} />캐릭터 추가</Button>} /> : <div className="space-y-5">
+            {ROLE_GROUPS.map((group) => {
+              const groupCharacters = characters.filter((character) => getRoleGroup(character) === group);
+              return <section key={group} aria-labelledby={`character-group-${group}`} className="rounded-lg border border-border bg-card p-4">
+                <div className="mb-3 flex items-center justify-between border-b border-border pb-3"><div><h3 id={`character-group-${group}`} className="text-sm font-semibold text-foreground">{group}</h3><p className="mt-0.5 text-xs text-muted-foreground">{group === "주연" ? "이야기의 중심 갈등과 변화를 이끄는 인물" : group === "조연" ? "주연의 선택과 사건 전개에 영향을 주는 인물" : "단역, 엑스트라, 분류 전 인물"}</p></div><span className="font-mono text-xs font-semibold text-primary">{groupCharacters.length}명</span></div>
+                {groupCharacters.length ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{groupCharacters.map((char) => <CharacterCard key={char.id} char={char} onEdit={() => { setEditChar(char); setModalOpen(true); }} onDelete={() => setDeleteId(char.id)} />)}</div> : <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">이 그룹에 등록된 캐릭터가 없습니다.</p>}
+              </section>;
+            })}
+          </div>}
+        </div>
+        <CreativeChat area="character" context={`현재 등록된 캐릭터 ${characters?.length ?? 0}명`} />
+      </div>
+    )}
+
+    <CharacterModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId!} character={editChar} />
+    <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMutation.mutate(deleteId)} title="캐릭터 삭제" message="이 캐릭터를 삭제하시겠습니까?" loading={deleteMutation.isPending} />
   </div>;
 }

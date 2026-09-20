@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpenCheck, Globe2, Save } from "lucide-react";
+import { BookOpenCheck, Expand, Globe2, Image as ImageIcon, ImagePlus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { worldSettingsApi } from "../../api/worldSettings";
 import { CreativeChat } from "../../components/ai/CreativeChat";
@@ -9,7 +9,9 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input, Textarea } from "../../components/ui/FormField";
 import { SkeletonCard } from "../../components/ui/Skeleton";
-import type { WorldSetting } from "../../types";
+import { Modal } from "../../components/ui/Modal";
+import { optimizeReferenceImage } from "../../utils/image";
+import type { WorldPlaceReference, WorldSetting } from "../../types";
 
 const createEmptySetting = (projectId: string): WorldSetting => ({
   id: `world-${projectId}`,
@@ -24,12 +26,15 @@ const createEmptySetting = (projectId: string): WorldSetting => ({
   forbiddenSettings: "",
   researchNotes: "",
   referenceSources: "",
+  placeReferences: [],
 });
 
 export function WorldSettingTab() {
   const { id: projectId } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [form, setForm] = useState<WorldSetting>(() => createEmptySetting(projectId ?? ""));
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [previewImage, setPreviewImage] = useState<WorldPlaceReference | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["world-setting", projectId],
@@ -51,6 +56,39 @@ export function WorldSettingTab() {
     },
     onError: () => toast.error("세계관 설정을 저장하지 못했습니다."),
   });
+
+  const placeReferences = form.placeReferences ?? [];
+
+  const handlePlaceImages = async (files?: FileList | null) => {
+    if (!files?.length) return;
+    const availableSlots = 3 - placeReferences.length;
+    if (availableSlots <= 0) return toast.error("장소 이미지는 최대 3장까지 등록할 수 있습니다.");
+    const selectedFiles = Array.from(files).slice(0, availableSlots);
+    if (files.length > availableSlots) toast.info(`남은 ${availableSlots}장만 추가했습니다.`);
+    setIsUploadingImages(true);
+    try {
+      const imageUrls = await Promise.all(selectedFiles.map(optimizeReferenceImage));
+      const addedReferences = imageUrls.map((imageUrl, index) => ({
+        id: `place-${Date.now()}-${index}`,
+        imageUrl,
+        memo: "",
+      }));
+      setForm((current) => ({ ...current, placeReferences: [...(current.placeReferences ?? []), ...addedReferences].slice(0, 3) }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "이미지를 등록하지 못했습니다.");
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
+  const updatePlaceMemo = (id: string, memo: string) => {
+    setForm((current) => ({ ...current, placeReferences: (current.placeReferences ?? []).map((reference) => reference.id === id ? { ...reference, memo } : reference) }));
+  };
+
+  const removePlaceImage = (id: string) => {
+    setForm((current) => ({ ...current, placeReferences: (current.placeReferences ?? []).filter((reference) => reference.id !== id) }));
+    if (previewImage?.id === id) setPreviewImage(null);
+  };
 
   if (isLoading) return <SkeletonCard lines={8} />;
 
@@ -80,6 +118,44 @@ export function WorldSettingTab() {
         </div>
       </section>
 
+      <section aria-labelledby="place-reference-title" className="mt-5 border-t border-border pt-5">
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2"><h3 id="place-reference-title" className="text-sm font-semibold">장소 이미지 메모</h3><span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-bold text-primary">{placeReferences.length}/3</span></div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">배경과 장소를 그릴 때 참고할 사진을 올리고 특징을 메모하세요.</p>
+          </div>
+          <label className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs font-semibold transition-colors ${placeReferences.length >= 3 || isUploadingImages ? "cursor-not-allowed bg-muted text-muted-foreground opacity-60" : "cursor-pointer bg-white text-foreground hover:border-primary/40 hover:text-primary"}`}>
+            <ImagePlus size={14} />{isUploadingImages ? "이미지 처리 중" : "사진 추가"}
+            <input type="file" accept="image/*" multiple disabled={placeReferences.length >= 3 || isUploadingImages} className="sr-only" onChange={(event) => { handlePlaceImages(event.target.files); event.target.value = ""; }} />
+          </label>
+        </div>
+
+        {placeReferences.length === 0 ? (
+          <div className="flex min-h-44 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-input-background text-center">
+            <ImageIcon size={28} className="text-muted-foreground/60" aria-hidden="true" />
+            <p className="mt-3 text-sm font-semibold text-text">사진 없음</p>
+            <p className="mt-1 text-xs text-muted-foreground">장소 참고 이미지는 최대 3장까지 등록할 수 있습니다.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {placeReferences.map((reference, index) => (
+              <article key={reference.id} className="overflow-hidden rounded-lg border border-border bg-input-background">
+                <button type="button" onClick={() => setPreviewImage(reference)} className="group relative block aspect-[4/3] w-full overflow-hidden bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`장소 이미지 ${index + 1} 크게 보기`}>
+                  <img src={reference.imageUrl} alt={reference.memo.trim() || `세계관 장소 참고 이미지 ${index + 1}`} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                  <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-md bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"><Expand size={15} /></span>
+                </button>
+                <div className="space-y-2 p-3">
+                  <label className="block text-xs font-semibold text-foreground">장소 설명 메모
+                    <textarea rows={3} maxLength={160} value={reference.memo} onChange={(event) => updatePlaceMemo(reference.id, event.target.value)} placeholder="예: 주인공의 작업실. 북향 창문과 오래된 목재 책상" className="mt-1.5 block w-full resize-none rounded-md border border-border bg-white px-2.5 py-2 text-xs font-normal leading-5 outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
+                  </label>
+                  <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">{reference.memo.length}/160자</span><button type="button" onClick={() => removePlaceImage(reference.id)} className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 size={12} />삭제</button></div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <details className="group mt-5 rounded-lg border border-border bg-input-background">
         <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">세부 설정 확장하기 <span className="ml-1 text-xs font-normal text-muted-foreground">필요할 때 작성</span></summary>
         <div className="grid grid-cols-1 gap-4 border-t border-border p-4 md:grid-cols-2">
@@ -101,5 +177,8 @@ export function WorldSettingTab() {
       </Card>
     </div>
     <CreativeChat area="world" context={[form.era, form.mainPlaces, form.worldRules, form.moodTone].filter(Boolean).join(" / ")} />
+    <Modal open={!!previewImage} onClose={() => setPreviewImage(null)} title="장소 이미지 미리보기" description={previewImage?.memo || "등록한 장소 참고 이미지를 크게 확인합니다."} size="xl">
+      {previewImage && <img src={previewImage.imageUrl} alt={previewImage.memo.trim() || "세계관 장소 참고 이미지 미리보기"} className="mx-auto max-h-[68vh] w-auto max-w-full rounded-lg object-contain" />}
+    </Modal>
   </div>;
 }

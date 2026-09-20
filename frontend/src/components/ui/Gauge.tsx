@@ -40,7 +40,7 @@ export function Gauge({ value, size = "md", showLabel = true, label, colorize = 
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={clsx("font-bold font-mono", size === "lg" ? "text-2xl" : size === "md" ? "text-xl" : "text-base", color.text)}>
+          <span className={clsx("font-mono font-extrabold tracking-[-0.04em]", size === "lg" ? "text-[2rem]" : size === "md" ? "text-[1.75rem]" : "text-xl", color.text)}>
             {value}%
           </span>
         </div>
@@ -63,9 +63,9 @@ export function ProgressBar({ value, total, label, colorize = true }: ProgressBa
   return (
     <div className="space-y-1">
       {label && (
-        <div className="flex justify-between text-xs">
+        <div className="flex items-end justify-between gap-3 text-xs">
           <span className="text-muted-foreground">{label}</span>
-          <span className={clsx("font-mono font-semibold", color.text)}>{value}/{total}</span>
+          <span className={clsx("shrink-0 font-mono text-sm font-extrabold leading-none tracking-[-0.03em]", color.text)}>{value}/{total}</span>
         </div>
       )}
       <div className="h-2 rounded-full bg-muted overflow-hidden">

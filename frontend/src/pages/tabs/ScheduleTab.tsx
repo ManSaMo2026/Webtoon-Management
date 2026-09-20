@@ -25,6 +25,12 @@ export function ScheduleTab() {
   const [hasAssistant, setHasAssistant] = useState(project.hasAssistant);
 
   const result = scheduleApi.calculateSync({ cuts, weeklyHours, colorMode, bgComplexity, hasAssistant, deadlineDays });
+  const savedDeadlineLabel = new Date(project.nextDeadline).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
 
   return (
     <div className="space-y-5">
@@ -70,6 +76,10 @@ export function ScheduleTab() {
               <CardTitle>현재 계획 진단</CardTitle>
               <span className="flex items-center gap-1 text-xs text-text-muted"><ShieldCheck size={14} />참고용 추정치</span>
             </CardHeader>
+
+            <p className="mb-2 text-center text-sm font-medium text-text-muted">
+              저장된 다음 마감일 <strong className="ml-1 text-base font-bold text-text">{savedDeadlineLabel}</strong>
+            </p>
 
             <div className="flex flex-col items-center gap-5 py-3">
               <Gauge value={result.successRate} size="lg" colorize label="마감 가능성 참고값" />

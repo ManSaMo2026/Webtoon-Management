@@ -1,4 +1,4 @@
-import { episodeStore, foreshadowStore, actStore } from "../mocks/store";
+import { episodeStore, foreshadowStore, actStore, projectStore } from "../mocks/store";
 import type { Episode, Foreshadow, Act } from "../types";
 import { aiApi } from "./ai.api";
 
@@ -17,7 +17,12 @@ export const storyApi = {
   saveActs: (data: Act) => actStore.upsert(data),
 
   getAiActSuggestion: async (projectId: string): Promise<Act> => {
-    const suggestion = await aiApi.suggestStoryStructure({ projectId });
+    const project = await projectStore.getById(projectId);
+    const suggestion = await aiApi.suggestStoryStructure({
+      projectId,
+      logline: project?.logline,
+      conflict: project?.conflict,
+    });
     return { projectId, ...suggestion };
   },
 };

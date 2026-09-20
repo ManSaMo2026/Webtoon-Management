@@ -12,15 +12,18 @@ import { NumberInput } from "../components/ui/NumberInput";
 import { RadioGroup } from "../components/ui/RadioGroup";
 import { ToggleSwitch } from "../components/ui/ToggleSwitch";
 import { TagInput } from "../components/ui/TagInput";
-import type { Genre, Cadence, ColorMode, BgComplexity } from "../types";
+import type { Genre, Cadence, ColorMode, BgComplexity, ProjectStatus } from "../types";
 import { optimizeCoverImage } from "../utils/image";
+import { MAX_EPISODES } from "../config/limits";
 
 interface FormData {
   title: string;
   coverImageUrl: string;
-  platform: string;
+  platformChoice: PlatformChoice;
+  customPlatform: string;
   tags: string[];
   genre: Genre;
+  customGenre: string;
   totalEpisodes: number;
   cadence: Cadence;
   weeklyHours: number;
@@ -31,6 +34,9 @@ interface FormData {
   logline: string;
   conflict: string;
   nextDeadline: string;
+  completionDate: string;
+  status: Exclude<ProjectStatus, "기획중">;
+  customStatus: string;
 }
 
 const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -38,9 +44,11 @@ const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 const INITIAL: FormData = {
   title: "",
   coverImageUrl: "",
-  platform: "",
+  platformChoice: "",
+  customPlatform: "",
   tags: [],
   genre: "판타지",
+  customGenre: "",
   totalEpisodes: 60,
   cadence: "주 1회",
   weeklyHours: 30,
@@ -51,11 +59,16 @@ const INITIAL: FormData = {
   logline: "",
   conflict: "",
   nextDeadline: nextWeek,
+  completionDate: "",
+  status: "연재중",
+  customStatus: "",
 };
 
 const GENRE_OPTIONS: Genre[] = ["판타지", "로맨스", "액션", "스릴러", "일상", "SF", "공포", "스포츠", "기타"];
 const CADENCE_OPTIONS: Cadence[] = ["주 1회", "주 2회", "격주", "월 1회"];
-const PLATFORM_OPTIONS = ["네이버웹툰", "카카오페이지", "카카오웹툰", "리디", "레진코믹스", "봄툰", "탑툰", "포스타입", "개인 연재"];
+type PlatformChoice = "" | "네이버웹툰" | "카카오페이지" | "기타";
+const PLATFORM_OPTIONS: Exclude<PlatformChoice, "">[] = ["네이버웹툰", "카카오페이지", "기타"];
+const STATUS_OPTIONS: Array<Exclude<ProjectStatus, "기획중">> = ["연재중", "휴재중", "완결", "기타"];
 
 function StepHeader({ step }: { step: 1 | 2 }) {
   return (
@@ -88,16 +101,23 @@ export function NewProjectPage() {
   };
 
   const mutation = useMutation({
-    mutationFn: () => projectsApi.create({
-      ...form,
-      nextDeadline: new Date(`${form.nextDeadline}T23:59:59`).toISOString(),
-    }),
+    mutationFn: () => {
+      const { platformChoice, customPlatform, ...projectData } = form;
+      return projectsApi.create({
+        ...projectData,
+        platform: platformChoice === "기타" ? customPlatform.trim() : platformChoice,
+        customGenre: form.genre === "기타" ? form.customGenre.trim() : "",
+        nextDeadline: new Date(`${form.nextDeadline}T23:59:59`).toISOString(),
+        completionDate: form.completionDate ? new Date(`${form.completionDate}T23:59:59`).toISOString() : undefined,
+        customStatus: form.status === "기타" ? form.customStatus.trim() : "",
+      });
+    },
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("프로젝트가 준비되었습니다. 첫 작업을 시작해보세요.");
       navigate(`/projects/${project.id}/dashboard`);
     },
-    onError: () => toast.error("프로젝트를 만들지 못했습니다. 잠시 후 다시 시도해주세요."),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "프로젝트를 만들지 못했습니다. 잠시 후 다시 시도해주세요."),
   });
 
   return (
@@ -146,17 +166,23 @@ export function NewProjectPage() {
                 <Select label="장르" value={form.genre} onChange={(event) => set({ genre: event.target.value as Genre })} hint="추천이나 분류에 활용됩니다.">
                   {GENRE_OPTIONS.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
                 </Select>
-                <div>
-                  <Input label="연재 플랫폼" value={form.platform} onChange={(event) => set({ platform: event.target.value })} placeholder="예: 네이버웹툰" list="platform-options" hint="미정이면 비워두어도 됩니다." />
-                  <datalist id="platform-options">{PLATFORM_OPTIONS.map((platform) => <option key={platform} value={platform} />)}</datalist>
-                </div>
+                <Select label="연재 플랫폼" value={form.platformChoice} onChange={(event) => set({ platformChoice: event.target.value as PlatformChoice })} hint="미정이면 선택하지 않아도 됩니다.">
+                  <option value="">미정</option>
+                  {PLATFORM_OPTIONS.map((platform) => <option key={platform} value={platform}>{platform}</option>)}
+                </Select>
               </div>
+              {(form.genre === "기타" || form.platformChoice === "기타") && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {form.genre === "기타" && <Input label="기타 장르" required value={form.customGenre} onChange={(event) => set({ customGenre: event.target.value })} placeholder="장르를 직접 입력하세요" />}
+                  {form.platformChoice === "기타" && <Input label="기타 연재 플랫폼" required value={form.customPlatform} onChange={(event) => set({ customPlatform: event.target.value })} placeholder="연재 플랫폼을 직접 입력하세요" />}
+                </div>
+              )}
               <TagInput value={form.tags} onChange={(tags) => set({ tags })} />
               <Textarea label="작품 한 줄 소개" value={form.logline} onChange={(event) => set({ logline: event.target.value })} placeholder="선택 사항입니다. 작품의 주인공과 핵심 사건을 한 문장으로 적어보세요." rows={3} hint="비워두고 나중에 스토리 메뉴에서 작성해도 됩니다." />
             </div>
 
             <div className="mt-7 flex justify-end">
-              <Button onClick={() => setStep(2)} disabled={!form.title.trim()}>다음: 작업 계획 입력<ArrowRight size={15} /></Button>
+              <Button onClick={() => setStep(2)} disabled={!form.title.trim() || (form.genre === "기타" && !form.customGenre.trim()) || (form.platformChoice === "기타" && !form.customPlatform.trim())}>다음: 작업 계획 입력<ArrowRight size={15} /></Button>
             </div>
           </Card>
         ) : (
@@ -172,6 +198,13 @@ export function NewProjectPage() {
 
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
+                <Select label="연재 진행상황" value={form.status} onChange={(event) => set({ status: event.target.value as Exclude<ProjectStatus, "기획중"> })} hint="프로젝트 목록과 오늘의 작업에 표시됩니다.">
+                  {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+                </Select>
+                {form.status === "기타" ? <Input label="기타 진행상황" required value={form.customStatus} onChange={(event) => set({ customStatus: event.target.value })} placeholder="예: 시즌 준비중" /> : <Input label="최종 완결 예정일" type="date" value={form.completionDate} onChange={(event) => set({ completionDate: event.target.value })} hint="미정이면 비워둘 수 있습니다." />}
+              </div>
+              {form.status === "기타" && <Input label="최종 완결 예정일" type="date" value={form.completionDate} onChange={(event) => set({ completionDate: event.target.value })} hint="미정이면 비워둘 수 있습니다." />}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Select label="연재 주기" value={form.cadence} onChange={(event) => set({ cadence: event.target.value as Cadence })} hint="마감 간격을 계산하는 기준입니다.">
                   {CADENCE_OPTIONS.map((cadence) => <option key={cadence} value={cadence}>{cadence}</option>)}
                 </Select>
@@ -183,7 +216,7 @@ export function NewProjectPage() {
                 <NumberInput label="한 회차의 예상 컷 수" value={form.avgCuts} onChange={(value) => set({ avgCuts: value })} min={10} max={200} step={5} unit="컷" hint="아직 모르면 기본값 45컷을 사용해도 됩니다." />
               </div>
 
-              <NumberInput label="완결 목표" value={form.totalEpisodes} onChange={(value) => set({ totalEpisodes: value })} min={1} max={500} step={10} unit="화" hint="전체 연재 진행률을 보여주는 데 사용됩니다." />
+              <NumberInput label="완결 목표" value={form.totalEpisodes} onChange={(value) => set({ totalEpisodes: value })} min={1} max={MAX_EPISODES} step={10} unit="화" hint={`최대 ${MAX_EPISODES}화 · 전체 연재 진행률을 보여주는 데 사용됩니다.`} />
 
               <details className="rounded-lg border border-border bg-input-background">
                 <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3.5 text-sm font-semibold text-text"><SlidersHorizontal size={16} className="text-primary" />세부 작업 방식 <span className="ml-1 font-normal text-text-muted">선택</span></summary>
@@ -197,7 +230,7 @@ export function NewProjectPage() {
 
             <div className="mt-7 flex justify-between gap-3">
               <Button variant="outline" onClick={() => setStep(1)}>이전</Button>
-              <Button onClick={() => mutation.mutate()} loading={mutation.isPending} disabled={!form.nextDeadline}>프로젝트 만들기</Button>
+              <Button onClick={() => mutation.mutate()} loading={mutation.isPending} disabled={!form.nextDeadline || (form.status === "기타" && !form.customStatus.trim())}>프로젝트 만들기</Button>
             </div>
           </Card>
         )}

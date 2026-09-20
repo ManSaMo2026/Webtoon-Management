@@ -1,19 +1,31 @@
 import { Link, useOutletContext, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Clock, CheckSquare, Square, Plus, Trash2, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, CheckSquare, Square, Plus, Save, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { todosApi } from "../../api/todos";
+import { projectsApi } from "../../api/projects";
 import { scheduleApi } from "../../api/schedule";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Gauge, ProgressBar } from "../../components/ui/Gauge";
 import { Button } from "../../components/ui/Button";
 import { SkeletonCard } from "../../components/ui/Skeleton";
-import type { Project } from "../../types";
-import { useState } from "react";
+import type { Project, ProjectStatus } from "../../types";
+import { useEffect, useState } from "react";
+import { getProjectGenreLabel, getProjectStatusLabel } from "../../utils/project";
+import { MiniCalendar, toLocalDateValue } from "../../components/ui/MiniCalendar";
+import { WorkTimeline } from "../../components/dashboard/WorkTimeline";
 
 function getDday(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+}
+
+type StatusChoice = Exclude<ProjectStatus, "기획중">;
+const STATUS_OPTIONS: StatusChoice[] = ["연재중", "휴재중", "완결", "기타"];
+
+function statusFormValue(project: Project): StatusChoice {
+  if (project.currentEpisode >= project.totalEpisodes) return "완결";
+  return STATUS_OPTIONS.includes(project.status as StatusChoice) ? project.status as StatusChoice : project.status ? "기타" : "연재중";
 }
 
 export function DashboardTab() {
@@ -36,6 +48,23 @@ export function DashboardTab() {
     ? { to: `/projects/${id}/schedule`, title: "첫 일정 진단을 확인해보세요", description: "입력한 작업량과 마감일을 바탕으로 부족한 시간을 확인할 수 있습니다.", label: "일정 진단 보기" }
     : { to: `/projects/${id}/story`, title: "먼저 작품의 한 줄 소개를 적어보세요", description: "작품의 중심을 정하면 캐릭터와 장면을 설계하기 쉬워집니다.", label: "스토리 시작하기" };
   const [newTodo, setNewTodo] = useState("");
+  const [nextDeadline, setNextDeadline] = useState(() => toLocalDateValue(project.nextDeadline));
+  const [currentEpisode, setCurrentEpisode] = useState(project.currentEpisode);
+  const [status, setStatus] = useState<StatusChoice>(() => statusFormValue(project));
+  const [customStatus, setCustomStatus] = useState(() => project.status === "기타" ? project.customStatus ?? "" : project.status === "기획중" ? "기획중" : "");
+
+  const changeCurrentEpisode = (value: number) => {
+    setCurrentEpisode(value);
+    if (value >= project.totalEpisodes) setStatus("완결");
+    else if (status === "완결") setStatus("연재중");
+  };
+
+  useEffect(() => setNextDeadline(toLocalDateValue(project.nextDeadline)), [project.nextDeadline]);
+  useEffect(() => {
+    setCurrentEpisode(project.currentEpisode);
+    setStatus(statusFormValue(project));
+    setCustomStatus(project.status === "기타" ? project.customStatus ?? "" : project.status === "기획중" ? "기획중" : "");
+  }, [project]);
 
   const { data: todos, isLoading } = useQuery({
     queryKey: ["todos", id],
@@ -56,6 +85,28 @@ export function DashboardTab() {
   const deleteTodoMutation = useMutation({
     mutationFn: todosApi.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["todos", id] }),
+  });
+
+  const deadlineMutation = useMutation({
+    mutationFn: () => projectsApi.update(project.id, { nextDeadline: new Date(`${nextDeadline}T23:59:59`).toISOString() }),
+    onSuccess: (updatedProject) => {
+      qc.setQueryData(["project", project.id], updatedProject);
+      qc.setQueryData<Project[]>(["projects"], (projects) => projects?.map((item) => item.id === updatedProject.id ? updatedProject : item));
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("다음 마감일이 저장되었습니다.");
+    },
+    onError: () => toast.error("마감일을 저장하지 못했습니다."),
+  });
+
+  const progressMutation = useMutation({
+    mutationFn: () => projectsApi.update(project.id, { currentEpisode, status, customStatus: status === "기타" ? customStatus.trim() : "" }),
+    onSuccess: (updatedProject) => {
+      qc.setQueryData(["project", project.id], updatedProject);
+      qc.setQueryData<Project[]>(["projects"], (projects) => projects?.map((item) => item.id === updatedProject.id ? updatedProject : item));
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("연재 진행상황이 저장되었습니다.");
+    },
+    onError: () => toast.error("연재 진행상황을 저장하지 못했습니다."),
   });
 
   return (
@@ -80,8 +131,8 @@ export function DashboardTab() {
           <div className={`text-3xl font-bold font-mono mb-1 ${isCompleted ? "text-primary" : dday <= 2 ? "text-red-500" : dday <= 5 ? "text-amber-500" : "text-emerald-500"}`}>
             {isCompleted ? "완결" : dday <= 0 ? "마감 초과" : `D-${dday}`}
           </div>
-          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={11} />{isCompleted ? "연재 상태" : "다음 마감"}</p>
-          {!isCompleted && <p className="text-xs text-muted-foreground mt-1">
+          <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-text-body"><Clock size={14} />{isCompleted ? "연재 상태" : "다음 마감일"}</p>
+          {!isCompleted && <p className="mt-1.5 text-base font-bold tracking-[-0.02em] text-foreground">
             {new Date(project.nextDeadline).toLocaleDateString("ko-KR")}
           </p>}
         </Card>
@@ -93,11 +144,15 @@ export function DashboardTab() {
 
         {/* Progress */}
         <Card className="flex flex-col justify-center gap-3">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">연재 진행</div>
-          <ProgressBar value={project.currentEpisode} total={project.totalEpisodes} label="회차" />
-          <div className="text-xs text-muted-foreground">
-            <span className="font-mono font-semibold text-foreground">{project.totalEpisodes - project.currentEpisode}</span>화 남음
-          </div>
+          <div className="flex items-center justify-between gap-2"><div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">연재 진행</div><span className="text-xs font-bold text-primary">{getProjectStatusLabel({ status, customStatus })}</span></div>
+          <div className="flex items-end justify-between"><span className="text-xs text-text-muted">현재 회차</span><span className="font-mono text-base font-extrabold text-text">{currentEpisode}/{project.totalEpisodes}</span></div>
+          <input type="range" min={0} max={project.totalEpisodes} step={1} value={currentEpisode} onChange={(event) => changeCurrentEpisode(Number(event.target.value))} aria-label={`현재 연재 회차, 총 ${project.totalEpisodes}화 중 ${currentEpisode}화`} className="h-2 w-full cursor-ew-resize accent-primary" />
+          <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0화</span><span><strong className="font-mono text-foreground">{Math.max(0, project.totalEpisodes - currentEpisode)}</strong>화 남음</span><span>{project.totalEpisodes}화</span></div>
+          <select value={status} onChange={(event) => setStatus(event.target.value as StatusChoice)} aria-label="연재 진행상황" className="w-full rounded-md border border-border bg-white px-2.5 py-2 text-xs font-semibold text-text outline-none focus:ring-2 focus:ring-primary">
+            {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          {status === "기타" && <input value={customStatus} onChange={(event) => setCustomStatus(event.target.value)} maxLength={30} placeholder="진행상황 직접 입력" aria-label="기타 연재 진행상황" className="w-full rounded-md border border-border bg-white px-2.5 py-2 text-xs text-text outline-none focus:ring-2 focus:ring-primary" />}
+          <Button size="sm" variant="outline" loading={progressMutation.isPending} disabled={(currentEpisode === project.currentEpisode && status === statusFormValue(project) && (status !== "기타" || customStatus.trim() === (project.customStatus ?? ""))) || (status === "기타" && !customStatus.trim())} onClick={() => progressMutation.mutate()}><Save size={13} />진행상황 저장</Button>
         </Card>
 
         {/* Risk */}
@@ -111,16 +166,18 @@ export function DashboardTab() {
         </Card>
       </div>
 
-      {/* Project info */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {/* Project info, todo, and deadline */}
+      <div className={`grid grid-cols-1 gap-4 ${isCompleted ? "xl:grid-cols-2" : "xl:grid-cols-3"}`}>
         <Card>
           <CardHeader>
             <div><CardTitle>프로젝트 정보</CardTitle>{isCompleted && <p className="mt-1 text-[11px] text-muted-foreground">작업량 관련 값은 화면 시연을 위한 가정값입니다.</p>}</div>
           </CardHeader>
           <div className="grid grid-cols-2 gap-y-3 text-sm">
             {[
-              ["장르", project.genre],
+              ["장르", getProjectGenreLabel(project)],
               ["연재 주기", project.cadence],
+              ["연재 상태", getProjectStatusLabel(project)],
+              ["최종 완결일", project.completionDate ? new Date(project.completionDate).toLocaleDateString("ko-KR") : "미정"],
               ["주당 작업 시간", `${project.weeklyHours}시간`],
               ["1화 평균 컷 수", `${project.avgCuts}컷`],
               ["채색 방식", project.colorMode],
@@ -189,7 +246,19 @@ export function DashboardTab() {
             </div>
           )}
         </Card>
+
+        {!isCompleted && (
+          <Card padding="none" className="flex flex-col overflow-hidden">
+            <MiniCalendar value={nextDeadline} onChange={setNextDeadline} embedded />
+            <div className="mt-auto flex flex-col gap-3 border-t border-border px-5 py-4">
+              <p className="text-xs leading-5 text-text-muted">저장하면 D-day와 마감 가능성 계산에 반영됩니다.</p>
+              <Button className="w-full" size="sm" loading={deadlineMutation.isPending} disabled={!nextDeadline || nextDeadline === toLocalDateValue(project.nextDeadline)} onClick={() => deadlineMutation.mutate()}><Save size={14} />마감일 저장</Button>
+            </div>
+          </Card>
+        )}
       </div>
+
+      {!isCompleted && <WorkTimeline projectId={project.id} deadline={nextDeadline} todos={todos ?? []} />}
     </div>
   );
 }

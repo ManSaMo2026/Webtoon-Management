@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Copy, MessageCircle, RotateCcw, Send } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 import { aiApi, type CreativeChatArea, type CreativeChatMessage } from "../../api/ai.api";
 import { Button } from "../ui/Button";
 
@@ -46,8 +47,11 @@ export function CreativeChat({ area, context }: { area: CreativeChatArea; contex
     try {
       const answer = await aiApi.chatCreativeAssistant({ area, message, history, context });
       setMessages((current) => [...current, { role: "assistant", content: answer }]);
-    } catch {
-      toast.error("상담 답변을 불러오지 못했습니다.");
+    } catch (error) {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || "상담 답변을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -75,7 +79,7 @@ export function CreativeChat({ area, context }: { area: CreativeChatArea; contex
       <div className="flex items-start justify-between gap-3 border-b border-border bg-secondary/30 px-4 py-3">
         <div className="flex min-w-0 items-start gap-2.5">
           <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground"><MessageCircle size={16} aria-hidden="true" /></span>
-          <div><h2 className="text-sm font-semibold text-foreground">{content.title}</h2><p className="mt-0.5 text-[11px] text-muted-foreground">AI 연결 전 대화 UI 데모</p></div>
+          <div><h2 className="text-sm font-semibold text-foreground">{content.title}</h2><p className="mt-0.5 text-[11px] text-muted-foreground">AI와 대화하며 설정 정리</p></div>
         </div>
         <button type="button" onClick={reset} className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="대화 새로 시작"><RotateCcw size={14} /></button>
       </div>

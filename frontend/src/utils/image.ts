@@ -2,7 +2,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_WIDTH = 900;
 const MAX_HEIGHT = 1200;
 
-export async function optimizeCoverImage(file: File): Promise<string> {
+async function optimizeImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("이미지 파일만 선택할 수 있습니다.");
   }
@@ -24,7 +24,7 @@ export async function optimizeCoverImage(file: File): Promise<string> {
     element.src = source;
   });
 
-  const scale = Math.min(1, MAX_WIDTH / image.width, MAX_HEIGHT / image.height);
+  const scale = Math.min(1, maxWidth / image.width, maxHeight / image.height);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(image.width * scale));
   canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -34,5 +34,13 @@ export async function optimizeCoverImage(file: File): Promise<string> {
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.82);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+export function optimizeCoverImage(file: File): Promise<string> {
+  return optimizeImage(file, MAX_WIDTH, MAX_HEIGHT, 0.82);
+}
+
+export function optimizeReferenceImage(file: File): Promise<string> {
+  return optimizeImage(file, 1000, 750, 0.76);
 }

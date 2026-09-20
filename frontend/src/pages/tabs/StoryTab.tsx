@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Sparkles, Filter, Network } from "lucide-react";
 import { storyApi } from "../../api/story";
+import { projectsApi } from "../../api/projects";
 import { charactersApi } from "../../api/characters";
 import { aiApi } from "../../api/ai.api";
 import { Card, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -14,6 +15,7 @@ import { Input, Textarea, Select } from "../../components/ui/FormField";
 import { SkeletonList, EmptyState } from "../../components/ui/Skeleton";
 import { CreativeChat } from "../../components/ai/CreativeChat";
 import type { Character, Episode, Foreshadow, Act, EpisodePurpose, ForeshadowImportance, ForeshadowStatus } from "../../types";
+import { MAX_EPISODES } from "../../config/limits";
 
 const PURPOSE_OPTIONS: EpisodePurpose[] = ["설정", "전개", "클라이맥스", "반전", "여운"];
 const purposeColor: Record<EpisodePurpose, "info" | "default" | "danger" | "warning" | "neutral"> = {
@@ -53,7 +55,7 @@ function ActsSection({ projectId }: { projectId: string }) {
   const saveMutation = useMutation({
     mutationFn: () => storyApi.saveActs({ projectId, ...form }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["acts", projectId] }); toast.success("3막 구조가 저장되었습니다."); },
-    onError: () => toast.error("저장 실패"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "저장 실패"),
   });
 
   return (
@@ -83,11 +85,16 @@ function ActsSection({ projectId }: { projectId: string }) {
 // --- Episode Form ---
 const EMPTY_EP = { number: 1, summary: "", purpose: "전개" as EpisodePurpose, hook: "" };
 
-function EpisodeModal({ open, onClose, projectId, episode }: {
-  open: boolean; onClose: () => void; projectId: string; episode?: Episode;
+function EpisodeModal({ open, onClose, projectId, episode, maxEpisode }: {
+  open: boolean; onClose: () => void; projectId: string; episode?: Episode; maxEpisode: number;
 }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(episode ?? { ...EMPTY_EP, projectId });
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(episode ?? { ...EMPTY_EP, projectId });
+  }, [open, episode, projectId]);
 
   const mutation = useMutation({
     mutationFn: () => episode
@@ -98,7 +105,7 @@ function EpisodeModal({ open, onClose, projectId, episode }: {
       toast.success(episode ? "회차가 수정되었습니다." : "회차가 추가되었습니다.");
       onClose();
     },
-    onError: () => toast.error("저장 실패"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "저장 실패"),
   });
 
   return (
@@ -116,7 +123,7 @@ function EpisodeModal({ open, onClose, projectId, episode }: {
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="화 번호" type="number" min={1} value={form.number}
+          <Input label="화 번호" type="number" min={1} max={maxEpisode} value={form.number} hint={`이 작품의 완결 목표: ${maxEpisode}화`}
             onChange={(e) => setForm(f => ({ ...f, number: Number(e.target.value) }))} />
           <Select label="회차 목적" value={form.purpose}
             onChange={(e) => setForm(f => ({ ...f, purpose: e.target.value as EpisodePurpose }))}>
@@ -135,7 +142,7 @@ function EpisodeModal({ open, onClose, projectId, episode }: {
 }
 
 // --- Episodes Section ---
-function EpisodesSection({ projectId }: { projectId: string }) {
+function EpisodesSection({ projectId, maxEpisode }: { projectId: string; maxEpisode: number }) {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editEp, setEditEp] = useState<Episode | undefined>();
@@ -155,7 +162,7 @@ function EpisodesSection({ projectId }: { projectId: string }) {
     <Card>
       <CardHeader>
         <div><CardTitle>2. 회차별 전개</CardTitle><p className="mt-1 text-xs text-muted-foreground">한 회차의 목적, 핵심 사건, 다음 화를 보게 할 마지막 장면을 기록합니다.</p></div>
-        <Button size="sm" onClick={() => { setEditEp(undefined); setModalOpen(true); }}>
+        <Button size="sm" disabled={(episodes?.length ?? 0) >= maxEpisode} title={(episodes?.length ?? 0) >= maxEpisode ? `최대 ${maxEpisode}개 회차까지 등록할 수 있습니다.` : undefined} onClick={() => { setEditEp(undefined); setModalOpen(true); }}>
           <Plus size={14} />회차 추가
         </Button>
       </CardHeader>
@@ -189,7 +196,7 @@ function EpisodesSection({ projectId }: { projectId: string }) {
           )}
         </>
       )}
-      <EpisodeModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId} episode={editEp} />
+      <EpisodeModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId} episode={editEp} maxEpisode={maxEpisode} />
       <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         title="회차 삭제" message="이 회차를 삭제하시겠습니까?"
@@ -212,8 +219,8 @@ const EMPTY_F = {
 const importanceLabel: Record<ForeshadowImportance, string> = { low: "낮음", medium: "보통", high: "높음" };
 const importanceBadge: Record<ForeshadowImportance, "neutral" | "info" | "danger"> = { low: "neutral", medium: "info", high: "danger" };
 
-function ForeshadowModal({ open, onClose, projectId, item }: {
-  open: boolean; onClose: () => void; projectId: string; item?: Foreshadow;
+function ForeshadowModal({ open, onClose, projectId, item, maxEpisode }: {
+  open: boolean; onClose: () => void; projectId: string; item?: Foreshadow; maxEpisode: number;
 }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(item ? { ...item, relatedCharacterIds: item.relatedCharacterIds ?? [] } : { ...EMPTY_F, projectId });
@@ -237,6 +244,7 @@ function ForeshadowModal({ open, onClose, projectId, item }: {
       toast.success(item ? "복선이 수정되었습니다." : "복선이 추가되었습니다.");
       onClose();
     },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "복선을 저장하지 못했습니다."),
   });
 
   return (
@@ -262,9 +270,9 @@ function ForeshadowModal({ open, onClose, projectId, item }: {
           onChange={(e) => setForm(f => ({ ...f, content: e.target.value }))}
           placeholder="복선의 내용이나 장면을 설명하세요." />
         <div className="grid grid-cols-2 gap-4">
-          <Input label="등장화" type="number" min={1} value={form.appearEp}
+          <Input label="등장화" type="number" min={1} max={maxEpisode} value={form.appearEp} hint={`최대 ${maxEpisode}화`}
             onChange={(e) => setForm(f => ({ ...f, appearEp: Number(e.target.value) }))} />
-          <Input label="회수화" type="number" min={1} value={form.resolveEp ?? ""}
+          <Input label="회수화" type="number" min={form.appearEp || 1} max={maxEpisode} value={form.resolveEp ?? ""} hint="등장화 이후로 입력"
             onChange={(e) => setForm(f => ({ ...f, resolveEp: e.target.value ? Number(e.target.value) : null }))}
             placeholder="미정" />
         </div>
@@ -296,7 +304,7 @@ function ForeshadowModal({ open, onClose, projectId, item }: {
   );
 }
 
-function ForeshadowSection({ projectId }: { projectId: string }) {
+function ForeshadowSection({ projectId, maxEpisode }: { projectId: string; maxEpisode: number }) {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Foreshadow | undefined>();
@@ -407,7 +415,7 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
           )}
         </>
       )}
-      <ForeshadowModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId} item={editItem} />
+      <ForeshadowModal open={modalOpen} onClose={() => setModalOpen(false)} projectId={projectId} item={editItem} maxEpisode={maxEpisode} />
       <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         title="복선 삭제" message="이 복선을 삭제하시겠습니까?"
@@ -431,14 +439,16 @@ function ForeshadowSection({ projectId }: { projectId: string }) {
 
 export function StoryTab() {
   const { id } = useParams<{ id: string }>();
+  const { data: project } = useQuery({ queryKey: ["project", id], queryFn: () => projectsApi.get(id!), enabled: !!id });
   if (!id) return null;
+  const maxEpisode = Math.min(project?.totalEpisodes ?? MAX_EPISODES, MAX_EPISODES);
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-5">
         <StoryWorkflowGuide />
         <ActsSection projectId={id} />
-        <EpisodesSection projectId={id} />
-        <ForeshadowSection projectId={id} />
+        <EpisodesSection projectId={id} maxEpisode={maxEpisode} />
+        <ForeshadowSection projectId={id} maxEpisode={maxEpisode} />
       </div>
       <CreativeChat area="story" context={`프로젝트 ${id}의 스토리, 회차, 복선을 정리하는 중`} />
     </div>

@@ -1,6 +1,7 @@
 import type {
-  Project, Episode, Foreshadow, Character, Act, Todo, WorldSetting,
+  Project, Episode, Foreshadow, Character, Act, Todo, TimelineItem, WorldSetting, RelationshipBoard,
 } from "../types";
+import { MAX_CHARACTERS_PER_PROJECT, MAX_EPISODES, MAX_PROJECTS } from "../config/limits";
 
 const KEYS = {
   projects: "wt_projects",
@@ -9,6 +10,8 @@ const KEYS = {
   characters: "wt_characters",
   acts: "wt_acts",
   todos: "wt_todos",
+  timelineItems: "wt_timeline_items",
+  relationshipBoards: "wt_relationship_boards",
   worldSettings: "wt_world_settings",
 };
 
@@ -21,7 +24,29 @@ function load<T>(key: string): T[] {
 }
 
 function save<T>(key: string, data: T[]): void {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    if (error instanceof DOMException && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")) {
+      throw new Error("브라우저 저장 공간이 부족합니다. 큰 이미지를 줄이거나 불필요한 항목을 삭제해주세요.");
+    }
+    throw error;
+  }
+}
+
+function projectEpisodeLimit(projectId: string): number {
+  const project = load<Project>(KEYS.projects).find((item) => item.id === projectId);
+  return Math.min(project?.totalEpisodes ?? MAX_EPISODES, MAX_EPISODES);
+}
+
+function validateForeshadowEpisodes(data: Pick<Foreshadow, "projectId" | "appearEp" | "resolveEp">): void {
+  const limit = projectEpisodeLimit(data.projectId);
+  if (!Number.isInteger(data.appearEp) || data.appearEp < 1 || data.appearEp > limit) {
+    throw new Error(`등장화는 1화부터 이 프로젝트의 완결 목표인 ${limit}화까지 입력할 수 있습니다.`);
+  }
+  if (data.resolveEp !== null && (!Number.isInteger(data.resolveEp) || data.resolveEp < data.appearEp || data.resolveEp > limit)) {
+    throw new Error(`회수화는 등장화 이후부터 완결 목표인 ${limit}화까지 입력할 수 있습니다.`);
+  }
 }
 
 const SEED_PROJECTS: Project[] = [
@@ -191,6 +216,8 @@ function initSeed() {
     save(KEYS.characters, SEED_CHARACTERS);
     save(KEYS.acts, SEED_ACTS);
     save(KEYS.todos, SEED_TODOS);
+    save(KEYS.timelineItems, []);
+    save(KEYS.relationshipBoards, []);
     save(KEYS.worldSettings, SEED_WORLD_SETTINGS);
     localStorage.setItem("wt_seeded", "1");
   }
@@ -253,6 +280,12 @@ export const projectStore = {
   create: async (data: Omit<Project, "id" | "createdAt" | "updatedAt" | "currentEpisode" | "successRate" | "riskLevel">): Promise<Project> => {
     await delay(600);
     const projects = load<Project>(KEYS.projects);
+    if (projects.length >= MAX_PROJECTS) {
+      throw new Error(`프로젝트는 최대 ${MAX_PROJECTS}개까지 만들 수 있습니다.`);
+    }
+    if (data.totalEpisodes < 1 || data.totalEpisodes > MAX_EPISODES) {
+      throw new Error(`완결 목표는 1화부터 ${MAX_EPISODES}화까지 입력할 수 있습니다.`);
+    }
     const scheduleEstimate = estimateInitialSchedule(data);
     const newProject: Project = {
       ...data,
@@ -268,6 +301,22 @@ export const projectStore = {
   update: async (id: string, data: Partial<Project>): Promise<Project> => {
     await delay(400);
     const projects = load<Project>(KEYS.projects);
+    const target = projects.find((project) => project.id === id);
+    if (!target) throw new Error("프로젝트를 찾을 수 없습니다.");
+    if (data.totalEpisodes !== undefined && (data.totalEpisodes < 1 || data.totalEpisodes > MAX_EPISODES)) {
+      throw new Error(`완결 목표는 1화부터 ${MAX_EPISODES}화까지 입력할 수 있습니다.`);
+    }
+    const nextTotal = data.totalEpisodes ?? target.totalEpisodes;
+    const nextCurrent = data.currentEpisode ?? target.currentEpisode;
+    if (!Number.isInteger(nextCurrent) || nextCurrent < 0 || nextCurrent > nextTotal) {
+      throw new Error(`현재 회차는 0화부터 완결 목표인 ${nextTotal}화까지 입력할 수 있습니다.`);
+    }
+    const highestEpisode = load<Episode>(KEYS.episodes)
+      .filter((episode) => episode.projectId === id)
+      .reduce((highest, episode) => Math.max(highest, episode.number), 0);
+    if (highestEpisode > nextTotal) {
+      throw new Error(`이미 ${highestEpisode}화까지 등록되어 있어 완결 목표를 ${nextTotal}화로 줄일 수 없습니다.`);
+    }
     const updated = projects.map(p => p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p);
     save(KEYS.projects, updated);
     return updated.find(p => p.id === id)!;
@@ -275,6 +324,14 @@ export const projectStore = {
   delete: async (id: string): Promise<void> => {
     await delay(300);
     save(KEYS.projects, load<Project>(KEYS.projects).filter(p => p.id !== id));
+    save(KEYS.episodes, load<Episode>(KEYS.episodes).filter(item => item.projectId !== id));
+    save(KEYS.foreshadows, load<Foreshadow>(KEYS.foreshadows).filter(item => item.projectId !== id));
+    save(KEYS.characters, load<Character>(KEYS.characters).filter(item => item.projectId !== id));
+    save(KEYS.acts, load<Act>(KEYS.acts).filter(item => item.projectId !== id));
+    save(KEYS.todos, load<Todo>(KEYS.todos).filter(item => item.projectId !== id));
+    save(KEYS.timelineItems, load<TimelineItem>(KEYS.timelineItems).filter(item => item.projectId !== id));
+    save(KEYS.relationshipBoards, load<RelationshipBoard>(KEYS.relationshipBoards).filter(item => item.projectId !== id));
+    save(KEYS.worldSettings, load<WorldSetting>(KEYS.worldSettings).filter(item => item.projectId !== id));
   },
 };
 
@@ -283,13 +340,31 @@ export const episodeStore = {
   getByProject: async (projectId: string): Promise<Episode[]> => { await delay(); return load<Episode>(KEYS.episodes).filter(e => e.projectId === projectId); },
   create: async (data: Omit<Episode, "id">): Promise<Episode> => {
     await delay(400);
+    const limit = projectEpisodeLimit(data.projectId);
+    if (!Number.isInteger(data.number) || data.number < 1 || data.number > limit) {
+      throw new Error(`회차 번호는 1화부터 이 프로젝트의 완결 목표인 ${limit}화까지 입력할 수 있습니다.`);
+    }
+    const episodes = load<Episode>(KEYS.episodes);
+    if (episodes.some((episode) => episode.projectId === data.projectId && episode.number === data.number)) {
+      throw new Error(`${data.number}화는 이미 등록되어 있습니다.`);
+    }
     const ep: Episode = { ...data, id: `e${Date.now()}` };
-    save(KEYS.episodes, [...load<Episode>(KEYS.episodes), ep]);
+    save(KEYS.episodes, [...episodes, ep]);
     return ep;
   },
   update: async (id: string, data: Partial<Episode>): Promise<Episode> => {
     await delay(300);
-    const eps = load<Episode>(KEYS.episodes).map(e => e.id === id ? { ...e, ...data } : e);
+    const existing = load<Episode>(KEYS.episodes);
+    const target = existing.find((episode) => episode.id === id);
+    const nextNumber = data.number ?? target?.number;
+    const limit = target ? projectEpisodeLimit(target.projectId) : MAX_EPISODES;
+    if (!target || !Number.isInteger(nextNumber) || nextNumber < 1 || nextNumber > limit) {
+      throw new Error(`회차 번호는 1화부터 이 프로젝트의 완결 목표인 ${limit}화까지 입력할 수 있습니다.`);
+    }
+    if (existing.some((episode) => episode.id !== id && episode.projectId === target.projectId && episode.number === nextNumber)) {
+      throw new Error(`${nextNumber}화는 이미 등록되어 있습니다.`);
+    }
+    const eps = existing.map(e => e.id === id ? { ...e, ...data } : e);
     save(KEYS.episodes, eps);
     return eps.find(e => e.id === id)!;
   },
@@ -304,13 +379,19 @@ export const foreshadowStore = {
   getByProject: async (projectId: string): Promise<Foreshadow[]> => { await delay(); return load<Foreshadow>(KEYS.foreshadows).filter(f => f.projectId === projectId); },
   create: async (data: Omit<Foreshadow, "id">): Promise<Foreshadow> => {
     await delay(400);
+    validateForeshadowEpisodes(data);
     const f: Foreshadow = { ...data, id: `f${Date.now()}` };
     save(KEYS.foreshadows, [...load<Foreshadow>(KEYS.foreshadows), f]);
     return f;
   },
   update: async (id: string, data: Partial<Foreshadow>): Promise<Foreshadow> => {
     await delay(300);
-    const fs = load<Foreshadow>(KEYS.foreshadows).map(f => f.id === id ? { ...f, ...data } : f);
+    const existing = load<Foreshadow>(KEYS.foreshadows);
+    const target = existing.find((item) => item.id === id);
+    if (!target) throw new Error("복선을 찾을 수 없습니다.");
+    const next = { ...target, ...data };
+    validateForeshadowEpisodes(next);
+    const fs = existing.map(f => f.id === id ? next : f);
     save(KEYS.foreshadows, fs);
     return fs.find(f => f.id === id)!;
   },
@@ -325,13 +406,28 @@ export const characterStore = {
   getByProject: async (projectId: string): Promise<Character[]> => { await delay(); return load<Character>(KEYS.characters).filter(c => c.projectId === projectId); },
   create: async (data: Omit<Character, "id">): Promise<Character> => {
     await delay(400);
+    const characters = load<Character>(KEYS.characters);
+    const projectCharacterCount = characters.filter((character) => character.projectId === data.projectId).length;
+    if (projectCharacterCount >= MAX_CHARACTERS_PER_PROJECT) {
+      throw new Error(`프로젝트당 캐릭터는 최대 ${MAX_CHARACTERS_PER_PROJECT}명까지 등록할 수 있습니다.`);
+    }
     const c: Character = { ...data, id: `c${Date.now()}` };
-    save(KEYS.characters, [...load<Character>(KEYS.characters), c]);
+    save(KEYS.characters, [...characters, c]);
     return c;
   },
   update: async (id: string, data: Partial<Character>): Promise<Character> => {
     await delay(300);
-    const cs = load<Character>(KEYS.characters).map(c => c.id === id ? { ...c, ...data } : c);
+    const existing = load<Character>(KEYS.characters);
+    const target = existing.find((character) => character.id === id);
+    if (!target) throw new Error("캐릭터를 찾을 수 없습니다.");
+    const nextProjectId = data.projectId ?? target.projectId;
+    if (nextProjectId !== target.projectId) {
+      const nextCount = existing.filter((character) => character.projectId === nextProjectId).length;
+      if (nextCount >= MAX_CHARACTERS_PER_PROJECT) {
+        throw new Error(`프로젝트당 캐릭터는 최대 ${MAX_CHARACTERS_PER_PROJECT}명까지 등록할 수 있습니다.`);
+      }
+    }
+    const cs = existing.map(c => c.id === id ? { ...c, ...data } : c);
     save(KEYS.characters, cs);
     return cs.find(c => c.id === id)!;
   },
@@ -392,5 +488,49 @@ export const todoStore = {
   delete: async (id: string): Promise<void> => {
     await delay(200);
     save(KEYS.todos, load<Todo>(KEYS.todos).filter(t => t.id !== id));
+  },
+};
+
+// Timeline items
+export const timelineItemStore = {
+  getByProject: async (projectId: string): Promise<TimelineItem[]> => {
+    await delay(200);
+    return load<TimelineItem>(KEYS.timelineItems).filter((item) => item.projectId === projectId);
+  },
+  create: async (data: Omit<TimelineItem, "id" | "createdAt">): Promise<TimelineItem> => {
+    await delay(300);
+    const item: TimelineItem = { ...data, id: `timeline-${Date.now()}`, createdAt: new Date().toISOString() };
+    save(KEYS.timelineItems, [...load<TimelineItem>(KEYS.timelineItems), item]);
+    return item;
+  },
+  update: async (id: string, data: Partial<Pick<TimelineItem, "title" | "startDate" | "endDate">>): Promise<TimelineItem> => {
+    await delay(300);
+    const items = load<TimelineItem>(KEYS.timelineItems);
+    const index = items.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error("일정을 찾을 수 없습니다.");
+    items[index] = { ...items[index], ...data };
+    save(KEYS.timelineItems, items);
+    return items[index];
+  },
+  delete: async (id: string): Promise<void> => {
+    await delay(200);
+    save(KEYS.timelineItems, load<TimelineItem>(KEYS.timelineItems).filter((item) => item.id !== id));
+  },
+};
+
+// Character relationship boards use one document per project.
+export const relationshipBoardStore = {
+  getByProject: async (projectId: string): Promise<RelationshipBoard | null> => {
+    await delay(150);
+    return load<RelationshipBoard>(KEYS.relationshipBoards).find((board) => board.projectId === projectId) ?? null;
+  },
+  upsert: async (data: RelationshipBoard): Promise<RelationshipBoard> => {
+    await delay(120);
+    const boards = load<RelationshipBoard>(KEYS.relationshipBoards);
+    const index = boards.findIndex((board) => board.projectId === data.projectId);
+    if (index >= 0) boards[index] = data;
+    else boards.push(data);
+    save(KEYS.relationshipBoards, boards);
+    return data;
   },
 };

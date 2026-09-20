@@ -6,6 +6,7 @@ export type ForeshadowStatus = "미회수" | "회수완료" | "진행중";
 export type ForeshadowImportance = "low" | "medium" | "high";
 export type EpisodePurpose = "설정" | "전개" | "클라이맥스" | "반전" | "여운";
 export type RiskLevel = "낮음" | "보통" | "높음" | "위험";
+export type ProjectStatus = "기획중" | "연재중" | "휴재중" | "완결" | "기타";
 
 export interface Project {
   id: string;
@@ -14,6 +15,7 @@ export interface Project {
   platform?: string;
   tags?: string[];
   genre: Genre;
+  customGenre?: string;
   totalEpisodes: number;
   cadence: Cadence;
   weeklyHours: number;
@@ -25,9 +27,11 @@ export interface Project {
   conflict: string;
   currentEpisode: number;
   nextDeadline: string; // ISO date string
+  completionDate?: string; // ISO date string
   successRate: number; // 0-100
   riskLevel: RiskLevel;
-  status?: "기획중" | "연재중" | "완결";
+  status?: ProjectStatus;
+  customStatus?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +82,43 @@ export interface Character {
   relationships?: string;
 }
 
+export interface RelationshipNode {
+  characterId: string;
+  x: number;
+  y: number;
+}
+
+export interface RelationshipConnection {
+  id: string;
+  fromCharacterId: string;
+  toCharacterId: string;
+  label: string;
+  fromSide?: RelationshipConnectionSide;
+  toSide?: RelationshipConnectionSide;
+  fromAnchor?: number;
+  toAnchor?: number;
+  arrowDirection?: RelationshipArrowDirection;
+  controlOffsetX?: number;
+  controlOffsetY?: number;
+}
+
+export type RelationshipConnectionSide = "top" | "right" | "bottom" | "left";
+export type RelationshipArrowDirection = "forward" | "reverse" | "both" | "none";
+
+export interface RelationshipNote {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+}
+
+export interface RelationshipBoard {
+  projectId: string;
+  nodes: RelationshipNode[];
+  connections: RelationshipConnection[];
+  notes: RelationshipNote[];
+}
+
 export interface WorldSetting {
   id: string;
   projectId: string;
@@ -91,6 +132,13 @@ export interface WorldSetting {
   forbiddenSettings: string;
   researchNotes?: string;
   referenceSources?: string;
+  placeReferences?: WorldPlaceReference[];
+}
+
+export interface WorldPlaceReference {
+  id: string;
+  imageUrl: string;
+  memo: string;
 }
 
 export interface SceneRequest {
@@ -155,4 +203,13 @@ export interface Todo {
   projectId: string;
   content: string;
   done: boolean;
+}
+
+export interface TimelineItem {
+  id: string;
+  projectId: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
 }

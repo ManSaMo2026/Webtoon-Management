@@ -13,6 +13,8 @@ import { ConfirmModal } from "../components/ui/Modal";
 import type { Project, RiskLevel } from "../types";
 import { useState } from "react";
 import { optimizeCoverImage } from "../utils/image";
+import { getProjectGenreLabel, getProjectStatusLabel } from "../utils/project";
+import { MAX_PROJECTS } from "../config/limits";
 
 function getDday(dateStr: string) {
   const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
@@ -42,6 +44,9 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
   const navigate = useNavigate();
   const dday = getDday(project.nextDeadline);
   const isCompleted = project.status === "완결" || project.currentEpisode >= project.totalEpisodes;
+  const genreLabel = getProjectGenreLabel(project);
+  const statusLabel = isCompleted ? "완결" : getProjectStatusLabel(project);
+  const statusVariant = statusLabel === "완결" ? "success" : statusLabel === "휴재중" ? "warning" : statusLabel === "연재중" ? "info" : "neutral";
 
   return (
     <Card padding="none"
@@ -56,7 +61,7 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
             <span className="text-[10px] font-semibold tracking-[0.18em] text-white/65">WEBTOON</span>
             <div>
               <p className="line-clamp-3 text-lg font-bold leading-snug drop-shadow-sm">{project.title}</p>
-              <p className="mt-2 text-xs text-white/70">{project.genre}</p>
+              <p className="mt-2 text-xs text-white/70">{genreLabel}</p>
             </div>
           </div>
         )}
@@ -72,12 +77,14 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
             <p className="mb-1.5 text-xs font-bold text-primary">작품 {String(number).padStart(2, "0")}</p>
             <h2 className="line-clamp-2 text-lg font-bold leading-snug tracking-[-0.02em] text-text">{project.title}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <Badge variant="info">{project.genre}</Badge>
+              <Badge variant="info">{genreLabel}</Badge>
               <Badge variant="neutral">{project.platform?.trim() || "플랫폼 미정"}</Badge>
-              {isCompleted ? <Badge variant="success">완결</Badge> : riskBadge(project.riskLevel)}
+              <Badge variant={statusVariant}>{statusLabel}</Badge>
+              {!isCompleted && riskBadge(project.riskLevel)}
             </div>
             <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-text-muted">{project.logline || "한 줄 소개를 작성하면 작품의 방향을 빠르게 확인할 수 있습니다."}</p>
             {project.tags && project.tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{project.tags.slice(0, 3).map((tag) => <span key={tag} className="text-xs font-medium text-primary">#{tag}</span>)}{project.tags.length > 3 && <span className="text-xs text-muted-foreground">+{project.tags.length - 3}</span>}</div>}
+            {project.completionDate && <p className="mt-2 text-xs font-medium text-text-muted">최종 완결 {new Date(project.completionDate).toLocaleDateString("ko-KR")} 예정</p>}
           </div>
           <button onClick={(event) => { event.stopPropagation(); onDelete(project.id); }} className="shrink-0 rounded px-1.5 py-1 text-xs text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100">삭제</button>
         </div>
@@ -87,13 +94,13 @@ function ProjectCard({ project, number, onDelete, onCoverChange }: { project: Pr
           {!isCompleted && <ProgressBar value={project.successRate} total={100} label="마감 가능성 참고값" colorize />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground"><span className="font-mono font-semibold text-foreground">{project.currentEpisode}</span>/{project.totalEpisodes}화</span>
-            <span className="text-muted-foreground">{project.cadence}</span>
+            <span className="text-muted-foreground"><span className="font-mono text-base font-extrabold text-foreground">{project.currentEpisode}</span>/{project.totalEpisodes}화</span>
+            <span className="font-medium text-muted-foreground">{project.cadence}</span>
           </div>
-          <div className={`flex items-center gap-1 font-mono font-semibold ${isCompleted ? "text-primary" : dday <= 2 ? "text-red-600" : dday <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
-            {isCompleted ? <>총 {project.totalEpisodes}화 완결</> : dday <= 0 ? <><AlertTriangle size={12} />마감 초과</> : <><Clock size={12} />D-{dday}</>}
+          <div className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-sm font-extrabold ${isCompleted ? "border-primary/20 bg-primary/10 text-primary" : dday <= 2 ? "border-red-200 bg-red-50 text-red-600" : dday <= 5 ? "border-amber-200 bg-amber-50 text-amber-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+            {isCompleted ? <>총 {project.totalEpisodes}화 완결</> : dday <= 0 ? <><AlertTriangle size={15} />마감 초과</> : <><Clock size={15} />D-{dday}</>}
           </div>
         </div>
       </div>
@@ -140,13 +147,18 @@ export function ProjectsPage() {
   };
 
   const orderedProjects = [...(projects ?? [])].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const projectLimitReached = (projects?.length ?? 0) >= MAX_PROJECTS;
+  const createProject = () => {
+    if (projectLimitReached) return toast.error(`프로젝트는 최대 ${MAX_PROJECTS}개까지 만들 수 있습니다.`);
+    navigate("/projects/new");
+  };
 
   return (
     <MainLayout
       pageTitle="프로젝트 목록"
       actions={
-        <Button size="sm" onClick={() => navigate("/projects/new")}>
-          <PlusCircle size={14} />새 프로젝트
+        <Button size="sm" onClick={createProject} disabled={projectLimitReached} title={projectLimitReached ? `최대 ${MAX_PROJECTS}개까지 만들 수 있습니다.` : undefined}>
+          <PlusCircle size={14} />새 프로젝트 ({projects?.length ?? 0}/{MAX_PROJECTS})
         </Button>
       }
     >
@@ -159,7 +171,7 @@ export function ProjectsPage() {
               title="아직 프로젝트가 없습니다"
               description="첫 번째 웹툰 프로젝트를 시작해보세요"
               action={
-                <Button size="sm" onClick={() => navigate("/projects/new")}>
+                <Button size="sm" onClick={createProject}>
                   <PlusCircle size={14} />새 프로젝트 만들기
                 </Button>
               }
