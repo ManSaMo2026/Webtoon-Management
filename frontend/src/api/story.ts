@@ -1,23 +1,36 @@
-import { episodeStore, foreshadowStore, actStore, projectStore } from "../mocks/store";
+import { apiClient } from "./client";
+import { projectsApi } from "./projects";
 import type { Episode, Foreshadow, Act } from "../types";
 import { aiApi } from "./ai.api";
 
 export const storyApi = {
-  getEpisodes: (projectId: string) => episodeStore.getByProject(projectId),
-  createEpisode: (data: Omit<Episode, "id">) => episodeStore.create(data),
-  updateEpisode: (id: string, data: Partial<Episode>) => episodeStore.update(id, data),
-  deleteEpisode: (id: string) => episodeStore.delete(id),
+  getEpisodes: async (projectId: string): Promise<Episode[]> =>
+    (await apiClient.get<Episode[]>(`/api/projects/${projectId}/episodes`)).data,
+  createEpisode: async (data: Omit<Episode, "id">): Promise<Episode> =>
+    (await apiClient.post<Episode>(`/api/projects/${data.projectId}/episodes`, data)).data,
+  updateEpisode: async (id: string, data: Partial<Episode>): Promise<Episode> =>
+    (await apiClient.put<Episode>(`/api/episodes/${id}`, data)).data,
+  deleteEpisode: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/episodes/${id}`);
+  },
 
-  getForeshadows: (projectId: string) => foreshadowStore.getByProject(projectId),
-  createForeshadow: (data: Omit<Foreshadow, "id">) => foreshadowStore.create(data),
-  updateForeshadow: (id: string, data: Partial<Foreshadow>) => foreshadowStore.update(id, data),
-  deleteForeshadow: (id: string) => foreshadowStore.delete(id),
+  getForeshadows: async (projectId: string): Promise<Foreshadow[]> =>
+    (await apiClient.get<Foreshadow[]>(`/api/projects/${projectId}/foreshadows`)).data,
+  createForeshadow: async (data: Omit<Foreshadow, "id">): Promise<Foreshadow> =>
+    (await apiClient.post<Foreshadow>(`/api/projects/${data.projectId}/foreshadows`, data)).data,
+  updateForeshadow: async (id: string, data: Partial<Foreshadow>): Promise<Foreshadow> =>
+    (await apiClient.put<Foreshadow>(`/api/foreshadows/${id}`, data)).data,
+  deleteForeshadow: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/foreshadows/${id}`);
+  },
 
-  getActs: (projectId: string): Promise<import("../types").Act | null> => actStore.getByProject(projectId),
-  saveActs: (data: Act) => actStore.upsert(data),
+  getActs: async (projectId: string): Promise<Act | null> =>
+    (await apiClient.get<Act | null>(`/api/projects/${projectId}/story-acts`)).data,
+  saveActs: async (data: Act): Promise<Act> =>
+    (await apiClient.put<Act>(`/api/projects/${data.projectId}/story-acts`, data)).data,
 
   getAiActSuggestion: async (projectId: string): Promise<Act> => {
-    const project = await projectStore.getById(projectId);
+    const project = await projectsApi.get(projectId);
     const suggestion = await aiApi.suggestStoryStructure({
       projectId,
       logline: project?.logline,

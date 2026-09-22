@@ -1,9 +1,15 @@
-import { todoStore } from "../mocks/store";
+import { apiClient } from "./client";
 import type { Todo } from "../types";
 
 export const todosApi = {
-  list: (projectId: string) => todoStore.getByProject(projectId),
-  create: (data: Omit<Todo, "id">) => todoStore.create(data),
-  toggle: (id: string) => todoStore.toggle(id),
-  delete: (id: string) => todoStore.delete(id),
+  list: async (projectId: string): Promise<Todo[]> =>
+    (await apiClient.get<Todo[]>(`/api/projects/${projectId}/todos`)).data,
+  create: async (data: Omit<Todo, "id">): Promise<Todo> =>
+    (await apiClient.post<Todo>(`/api/projects/${data.projectId}/todos`, data)).data,
+  toggle: async (id: string): Promise<void> => {
+    await apiClient.patch(`/api/todos/${id}`);
+  },
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/todos/${id}`);
+  },
 };
