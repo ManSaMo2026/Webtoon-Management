@@ -2,7 +2,7 @@ import { z } from "zod";
 import { FORESHADOW_STATUSES, FORESHADOW_IMPORTANCES } from "../config/enums.mjs";
 
 export const foreshadowSchema = z.object({
-  content: z.string().trim().min(1, "내용을 입력해주세요.").max(500),
+  content: z.string().trim().max(500).optional().default(""),
   keyword: z.string().trim().max(60).optional(),
   importance: z.enum(FORESHADOW_IMPORTANCES).optional(),
   appearEp: z.number().int().min(1),

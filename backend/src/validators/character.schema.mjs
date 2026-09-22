@@ -6,7 +6,7 @@ const optionalText = (max) => z.string().trim().max(max).optional();
 // imageUrl/storageKey are set only via the character image upload endpoint.
 export const characterSchema = z.object({
   name: z.string().trim().min(1, "이름을 입력해주세요.").max(60),
-  role: z.string().trim().min(1, "역할을 입력해주세요.").max(60),
+  role: z.string().trim().max(60).optional().default(""),
   roleGroup: z.enum(CHARACTER_ROLE_GROUPS).optional(),
   personality: z.string().trim().max(1000).optional().default(""),
   goal: z.string().trim().max(1000).optional().default(""),
