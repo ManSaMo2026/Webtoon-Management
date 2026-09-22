@@ -17,8 +17,10 @@ export async function getRelationshipBoard(projectId) {
   return serialize(board);
 }
 
-// Optimistic locking: the client must send the version it last read. A mismatch
-// means someone else saved in between, so we reject instead of overwriting.
+// Optimistic locking: if the client sends the version it last read and it no
+// longer matches, someone else saved in between, so we reject instead of
+// overwriting. Callers that don't send a version (not every client tracks one
+// yet) skip this check and just overwrite, same as the old localStorage store.
 export async function saveRelationshipBoard(projectId, { nodes, connections, notes, version }) {
   const existing = await prisma.relationshipBoard.findUnique({ where: { projectId } });
 
@@ -29,7 +31,7 @@ export async function saveRelationshipBoard(projectId, { nodes, connections, not
     return serialize(created);
   }
 
-  if (existing.version !== version) {
+  if (version !== undefined && existing.version !== version) {
     throw conflict("다른 곳에서 먼저 저장되어 최신 상태를 다시 불러와야 합니다.");
   }
 

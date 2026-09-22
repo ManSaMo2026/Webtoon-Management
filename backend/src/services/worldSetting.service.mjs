@@ -35,6 +35,15 @@ export async function addWorldPlaceImage(projectId, { imageUrl, storageKey, memo
   });
 }
 
+export async function updateWorldPlaceImageMemo(userId, imageId, memo) {
+  const image = await prisma.worldPlaceReference.findUnique({
+    where: { id: imageId },
+    include: { project: { select: { userId: true } } },
+  });
+  if (!image || image.project.userId !== userId) throw notFound("이미지를 찾을 수 없습니다.");
+  return prisma.worldPlaceReference.update({ where: { id: imageId }, data: { memo } });
+}
+
 export async function deleteWorldPlaceImage(userId, imageId) {
   const image = await prisma.worldPlaceReference.findUnique({
     where: { id: imageId },

@@ -31,5 +31,5 @@ export const relationshipBoardSchema = z.object({
   nodes: z.array(nodeSchema).max(200),
   connections: z.array(connectionSchema).max(500),
   notes: z.array(noteSchema).max(100),
-  version: z.number().int().min(1),
+  version: z.number().int().min(1).optional(),
 });
