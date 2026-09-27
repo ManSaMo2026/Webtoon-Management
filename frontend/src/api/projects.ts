@@ -1,14 +1,39 @@
-import { projectStore } from "../mocks/store";
+import { apiClient } from "./client";
+import { dataUrlToBlob, isDataUrl, uploadImageBlob } from "./imageUpload";
 import type { Project } from "../types";
 
-// Replace these with apiClient calls when backend is ready:
-// e.g. apiClient.get("/projects").then(r => r.data)
+type CreateProjectInput = Omit<Project, "id" | "createdAt" | "updatedAt" | "currentEpisode" | "successRate" | "riskLevel">;
+
+async function uploadCoverIfNeeded(id: string, coverImageUrl: string | undefined, fallback: Project): Promise<Project> {
+  if (!isDataUrl(coverImageUrl)) return fallback;
+  const blob = await dataUrlToBlob(coverImageUrl);
+  return uploadImageBlob<Project>(`/api/projects/${id}/cover-image`, blob);
+}
 
 export const projectsApi = {
-  list: () => projectStore.getAll(),
-  get: (id: string) => projectStore.getById(id),
-  create: (data: Omit<Project, "id" | "createdAt" | "updatedAt" | "currentEpisode" | "successRate" | "riskLevel">) =>
-    projectStore.create(data),
-  update: (id: string, data: Partial<Project>) => projectStore.update(id, data),
-  delete: (id: string) => projectStore.delete(id),
+  list: async (): Promise<Project[]> => (await apiClient.get<Project[]>("/api/projects")).data,
+
+  get: async (id: string): Promise<Project | undefined> => {
+    try {
+      return (await apiClient.get<Project>(`/api/projects/${id}`)).data;
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return undefined;
+      throw error;
+    }
+  },
+
+  create: async (data: CreateProjectInput): Promise<Project> => {
+    const created = (await apiClient.post<Project>("/api/projects", data)).data;
+    return uploadCoverIfNeeded(created.id, data.coverImageUrl, created);
+  },
+
+  update: async (id: string, data: Partial<Project>): Promise<Project> => {
+    const updated = (await apiClient.put<Project>(`/api/projects/${id}`, data)).data;
+    return uploadCoverIfNeeded(id, data.coverImageUrl, updated);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/projects/${id}`);
+  },
 };

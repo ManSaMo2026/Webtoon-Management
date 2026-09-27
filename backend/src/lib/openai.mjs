@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-const DEFAULT_MODEL = "gpt-5.6-luna";
+export const DEFAULT_MODEL = "gpt-5.6-luna";
 const DEFAULT_OUTPUT_LIMIT = 700;
 const MAX_OUTPUT_LIMIT = 1_000;
 const MAX_INPUT_CHARACTERS = 16_000;
