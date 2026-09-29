@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, MessageCircle, RotateCcw, Send } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -23,18 +24,43 @@ const areaContent: Record<CreativeChatArea, { title: string; greeting: string; p
   },
 };
 
-export function CreativeChat({ area, context }: { area: CreativeChatArea; context?: string }) {
+export function CreativeChat({ area, projectId }: { area: CreativeChatArea; projectId: string }) {
   const content = areaContent[area];
+  const queryClient = useQueryClient();
   const initialMessages = useMemo<CreativeChatMessage[]>(() => [{ role: "assistant", content: content.greeting }], [content.greeting]);
   const [messages, setMessages] = useState<CreativeChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const { data: savedMessages, isLoading: isHistoryLoading } = useQuery({
+    queryKey: ["ai-chat", projectId, area],
+    queryFn: () => aiApi.listCreativeChat(projectId, area),
+    enabled: !!projectId,
+  });
+
+  useEffect(() => {
+    if (!savedMessages) return;
+    setMessages(savedMessages.length > 0
+      ? [initialMessages[0], ...savedMessages.map(({ role, content }) => ({ role, content }))]
+      : initialMessages);
+  }, [savedMessages, initialMessages]);
+
+  const clearMutation = useMutation({
+    mutationFn: () => aiApi.clearCreativeChat(projectId, area),
+    onSuccess: () => {
+      queryClient.setQueryData(["ai-chat", projectId, area], []);
+      setMessages(initialMessages);
+      setInput("");
+      toast.success("이 프로젝트의 상담 기록을 삭제했습니다.");
+      inputRef.current?.focus();
+    },
+    onError: () => toast.error("상담 기록을 삭제하지 못했습니다."),
+  });
+
   const reset = () => {
-    setMessages(initialMessages);
-    setInput("");
-    inputRef.current?.focus();
+    if (messages.length > 1 && !window.confirm("이 프로젝트의 현재 상담 기록을 모두 삭제하고 새로 시작할까요?")) return;
+    clearMutation.mutate();
   };
 
   const send = async (text = input) => {
@@ -45,13 +71,15 @@ export function CreativeChat({ area, context }: { area: CreativeChatArea; contex
     setInput("");
     setLoading(true);
     try {
-      const answer = await aiApi.chatCreativeAssistant({ area, message, history, context });
+      const answer = await aiApi.chatCreativeAssistant({ projectId, area, message });
       setMessages((current) => [...current, { role: "assistant", content: answer }]);
+      void queryClient.invalidateQueries({ queryKey: ["ai-chat", projectId, area] });
     } catch (error) {
       const message = axios.isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message
         : undefined;
       toast.error(message || "상담 답변을 불러오지 못했습니다.");
+      setMessages(history);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -81,10 +109,11 @@ export function CreativeChat({ area, context }: { area: CreativeChatArea; contex
           <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground"><MessageCircle size={16} aria-hidden="true" /></span>
           <div><h2 className="text-sm font-semibold text-foreground">{content.title}</h2><p className="mt-0.5 text-[11px] text-muted-foreground">AI와 대화하며 설정 정리</p></div>
         </div>
-        <button type="button" onClick={reset} className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="대화 새로 시작"><RotateCcw size={14} /></button>
+        <button type="button" onClick={reset} disabled={clearMutation.isPending} className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" aria-label="저장된 대화 기록을 삭제하고 새로 시작"><RotateCcw size={14} /></button>
       </div>
 
       <div className="max-h-[420px] min-h-[300px] space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
+        {isHistoryLoading && <p className="text-center text-xs text-muted-foreground">저장된 상담 기록을 불러오고 있어요…</p>}
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`group max-w-[88%] whitespace-pre-wrap rounded-lg px-3 py-2 text-xs leading-5 ${message.role === "user" ? "bg-primary text-primary-foreground" : "border border-border bg-muted/50 text-foreground"}`}>

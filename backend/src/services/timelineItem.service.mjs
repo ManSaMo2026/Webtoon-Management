@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.mjs";
-import { notFound } from "../lib/errors.mjs";
+import { AppError, notFound } from "../lib/errors.mjs";
 
 async function loadOwnedItem(userId, itemId) {
   const item = await prisma.timelineItem.findUnique({
@@ -21,13 +21,18 @@ export async function createTimelineItem(projectId, data) {
 }
 
 export async function updateTimelineItem(userId, itemId, data) {
-  await loadOwnedItem(userId, itemId);
+  const item = await loadOwnedItem(userId, itemId);
+  const nextStartDate = data.startDate ? new Date(data.startDate) : item.startDate;
+  const nextEndDate = data.endDate ? new Date(data.endDate) : item.endDate;
+  if (nextStartDate > nextEndDate) {
+    throw new AppError("종료일은 시작일 이후여야 합니다.", 400);
+  }
   return prisma.timelineItem.update({
     where: { id: itemId },
     data: {
       ...data,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      startDate: nextStartDate,
+      endDate: nextEndDate,
     },
   });
 }

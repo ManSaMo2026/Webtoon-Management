@@ -9,11 +9,17 @@ export interface CreativeChatMessage {
   content: string;
 }
 
+export interface SavedCreativeChatMessage extends CreativeChatMessage {
+  id: string;
+  projectId: string;
+  area: CreativeChatArea;
+  createdAt: string;
+}
+
 interface CreativeChatRequest {
+  projectId: string;
   area: CreativeChatArea;
   message: string;
-  history: CreativeChatMessage[];
-  context?: string;
 }
 
 interface AiResponse<T> {
@@ -27,8 +33,16 @@ async function postAi<T>(path: string, payload: unknown): Promise<T> {
 }
 
 export const aiApi = {
+  async listCreativeChat(projectId: string, area: CreativeChatArea): Promise<SavedCreativeChatMessage[]> {
+    return (await apiClient.get<SavedCreativeChatMessage[]>(`/api/ai/projects/${projectId}/messages`, { params: { area } })).data;
+  },
+
   async chatCreativeAssistant(req: CreativeChatRequest): Promise<string> {
     return postAi<string>("/api/ai/chat", req);
+  },
+
+  async clearCreativeChat(projectId: string, area: CreativeChatArea): Promise<void> {
+    await apiClient.delete(`/api/ai/projects/${projectId}/messages`, { params: { area } });
   },
 
   async suggestStoryStructure(input: StoryStructureInput): Promise<StoryStructureSuggestion> {

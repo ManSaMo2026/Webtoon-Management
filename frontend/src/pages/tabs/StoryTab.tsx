@@ -450,7 +450,7 @@ export function StoryTab() {
         <EpisodesSection projectId={id} maxEpisode={maxEpisode} />
         <ForeshadowSection projectId={id} maxEpisode={maxEpisode} />
       </div>
-      <CreativeChat area="story" context={`프로젝트 ${id}의 스토리, 회차, 복선을 정리하는 중`} />
+      <CreativeChat area="story" projectId={id!} />
     </div>
   );
 }

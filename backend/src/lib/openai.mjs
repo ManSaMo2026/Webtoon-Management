@@ -284,7 +284,7 @@ export async function runAiTask(task, payload) {
       : [];
     return requestText(
       textPrompts.chat[area],
-      inputContext("상담 대화", { context: String(payload?.context || "").slice(0, 4_000), history, message }),
+      inputContext("현재 프로젝트와 상담 대화", { project: payload?.context || null, history, message }),
     );
   }
 

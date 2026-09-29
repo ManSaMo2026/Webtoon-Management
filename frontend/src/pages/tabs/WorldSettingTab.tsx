@@ -176,7 +176,7 @@ export function WorldSettingTab() {
       <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">오른쪽 상담에서 생각을 충분히 정리한 뒤, 필요한 내용만 직접 입력하고 저장해주세요.</p>
       </Card>
     </div>
-    <CreativeChat area="world" context={[form.era, form.mainPlaces, form.worldRules, form.moodTone].filter(Boolean).join(" / ")} />
+    <CreativeChat area="world" projectId={projectId!} />
     <Modal open={!!previewImage} onClose={() => setPreviewImage(null)} title="장소 이미지 미리보기" description={previewImage?.memo || "등록한 장소 참고 이미지를 크게 확인합니다."} size="xl">
       {previewImage && <img src={previewImage.imageUrl} alt={previewImage.memo.trim() || "세계관 장소 참고 이미지 미리보기"} className="mx-auto max-h-[68vh] w-auto max-w-full rounded-lg object-contain" />}
     </Modal>
