@@ -183,7 +183,7 @@ export function CharactersTab() {
             })}
           </div>}
         </div>
-        <CreativeChat area="character" context={`현재 등록된 캐릭터 ${characters?.length ?? 0}명`} />
+        <CreativeChat area="character" projectId={projectId!} />
       </div>
     )}
 
