@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Pencil } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { FontSizeControl } from "./FontSizeControl";
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
@@ -22,6 +23,7 @@ export function PublicHeader() {
           <Brand />
         </div>
         <div className="identity-header-actions">
+          <FontSizeControl compact />
           {!user && <Link to="/login" className="identity-header-login">로그인</Link>}
           <Link to={user ? "/projects" : "/signup"} className="identity-header-action">{user ? "내 프로젝트" : "무료로 시작하기"}</Link>
         </div>

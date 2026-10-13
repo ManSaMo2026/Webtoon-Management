@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, MessageCircle, RotateCcw, Send } from "lucide-react";
+import { Copy, MessageCircle, RotateCcw, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { aiApi, type CreativeChatArea, type CreativeChatMessage } from "../../api/ai.api";
@@ -31,6 +31,7 @@ export function CreativeChat({ area, projectId }: { area: CreativeChatArea; proj
   const [messages, setMessages] = useState<CreativeChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [safetyNotice, setSafetyNotice] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: savedMessages, isLoading: isHistoryLoading } = useQuery({
@@ -52,6 +53,7 @@ export function CreativeChat({ area, projectId }: { area: CreativeChatArea; proj
       queryClient.setQueryData(["ai-chat", projectId, area], []);
       setMessages(initialMessages);
       setInput("");
+      setSafetyNotice(null);
       toast.success("이 프로젝트의 상담 기록을 삭제했습니다.");
       inputRef.current?.focus();
     },
@@ -67,6 +69,7 @@ export function CreativeChat({ area, projectId }: { area: CreativeChatArea; proj
     const message = text.trim();
     if (!message || loading) return;
     const history = messages;
+    setSafetyNotice(null);
     setMessages((current) => [...current, { role: "user", content: message }]);
     setInput("");
     setLoading(true);
@@ -75,10 +78,16 @@ export function CreativeChat({ area, projectId }: { area: CreativeChatArea; proj
       setMessages((current) => [...current, { role: "assistant", content: answer }]);
       void queryClient.invalidateQueries({ queryKey: ["ai-chat", projectId, area] });
     } catch (error) {
-      const message = axios.isAxiosError<{ message?: string }>(error)
-        ? error.response?.data?.message
+      const errorData = axios.isAxiosError<{ message?: string; code?: string }>(error)
+        ? error.response?.data
         : undefined;
-      toast.error(message || "상담 답변을 불러오지 못했습니다.");
+      const errorMessage = errorData?.message || "상담 답변을 불러오지 못했습니다.";
+      if (errorData?.code === "CHAT_SECURITY_BLOCKED" || errorData?.code === "CHAT_LANGUAGE_BLOCKED") {
+        setSafetyNotice(errorMessage);
+        toast.warning("안전 정책에 따라 메시지가 삭제되었습니다.");
+      } else {
+        toast.error(errorMessage);
+      }
       setMessages(history);
     } finally {
       setLoading(false);
@@ -128,6 +137,12 @@ export function CreativeChat({ area, projectId }: { area: CreativeChatArea; proj
       {messages.length === 1 && <div className="flex flex-wrap gap-1.5 border-t border-border px-4 py-3">{content.prompts.map((prompt) => <button key={prompt} type="button" onClick={() => void send(prompt)} className="rounded-md border border-border px-2.5 py-1.5 text-[11px] text-text-body hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{prompt}</button>)}</div>}
 
       <div className="border-t border-border p-3">
+        {safetyNotice && (
+          <div role="alert" className="mb-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+            <ShieldAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{safetyNotice}</span>
+          </div>
+        )}
         <label htmlFor={`creative-chat-${area}`} className="sr-only">{content.title} 메시지</label>
         <textarea ref={inputRef} id={`creative-chat-${area}`} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={onKeyDown} rows={3} placeholder="생각이나 고민을 입력하세요" className="w-full resize-none rounded-md border border-border bg-input-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
         <div className="mt-2 flex items-center justify-between gap-3"><p className="text-[11px] text-muted-foreground">Enter 전송 · Shift+Enter 줄바꿈</p><Button type="button" size="sm" disabled={!input.trim()} loading={loading} onClick={() => void send()}><Send size={13} />전송</Button></div>
