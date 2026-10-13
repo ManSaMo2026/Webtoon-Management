@@ -5,6 +5,7 @@ import { asyncRoute } from "../middleware/errorHandler.mjs";
 import { runAiTask, DEFAULT_MODEL } from "../lib/openai.mjs";
 import { recordAiUsage } from "../services/aiUsage.service.mjs";
 import { AppError } from "../lib/errors.mjs";
+import { enforceChatInputSafety } from "../lib/chatSafety.mjs";
 import * as aiChatService from "../services/aiChat.service.mjs";
 
 export const aiRouter = Router();
@@ -45,6 +46,7 @@ aiRouter.post("/chat", asyncRoute(async (req, res) => {
   if (!projectId) throw new AppError("프로젝트 정보가 필요합니다.", 400);
   if (!message) throw new AppError("메시지를 입력해주세요.", 400);
   if (message.length > 2_000) throw new AppError("메시지는 2,000자 이내로 입력해주세요.", 400);
+  enforceChatInputSafety(message);
 
   const { context, history } = await aiChatService.buildChatRequest(req.user.id, projectId, area);
   const result = await runAiTask("chat", { area, message, history, context });

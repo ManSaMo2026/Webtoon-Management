@@ -59,6 +59,18 @@
   --r-lg: 16px;
 }
 
+:root[data-font-size="small"] {
+  --font-size: 14px;
+}
+
+:root[data-font-size="medium"] {
+  --font-size: 15px;
+}
+
+:root[data-font-size="large"] {
+  --font-size: 17px;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

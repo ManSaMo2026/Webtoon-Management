@@ -14,7 +14,10 @@ export function errorHandler(error, req, res, next) {
     console.error(`[server] ${error?.stack || error?.message || "알 수 없는 오류"}`);
     return res.status(safeStatus).json({ message: "서버 오류가 발생했습니다." });
   }
-  res.status(safeStatus).json({ message: error.message || "요청을 처리할 수 없습니다." });
+  res.status(safeStatus).json({
+    message: error.message || "요청을 처리할 수 없습니다.",
+    ...(error.code ? { code: error.code } : {}),
+  });
 }
 
 export function notFoundHandler(req, res) {

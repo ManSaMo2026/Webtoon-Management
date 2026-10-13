@@ -5,6 +5,7 @@ import {
   FolderKanban, PlusCircle, Pencil, Globe2, LogOut, Settings,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { FontSizeControl } from "./FontSizeControl";
 
 const PROJECT_NAV_GROUPS = [
   {
@@ -137,6 +138,9 @@ export function Sidebar({ projectMode, projectTitle }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-3 border-t border-sidebar-border">
+        <div className="mb-3">
+          <FontSizeControl dark />
+        </div>
         <div className="flex items-center gap-2">
           <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 hover:bg-sidebar-accent/50">
             <div className="w-7 h-7 shrink-0 rounded-full bg-indigo-400 flex items-center justify-center text-white text-xs font-bold">{initial}</div>
